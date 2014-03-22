@@ -2,13 +2,13 @@ Mini server web en C
 ===========================
 L'objectif de ce projet est de réaliser un mini-serveur web en C sous Linux. Le serveur web devra fonctionner en même temps sur IPv4 et sur IPv6 sans redémarrer. Il ne dépendra que de la librairie GNU/C et des appels systèmes du noyaux Linux pour fonctionner.
 
-## Contibuteurs
+## Contributeurs
 
 Joachim Schmidt
 
 Felipe Paul Martins
 
-## Codes erreurs
+## Codes d'erreurs
 
 ### Socket 100
 
