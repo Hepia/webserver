@@ -19,13 +19,16 @@ EXEC=webserver
 
 all: $(EXEC)
 
-webserver: main.o options.o
+webserver: main.o options.o socket.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-main.o: main.c ./include/options.h
+main.o: main.c ./include/socket.h
 	$(CC) -o $@ $^ $< $(CFLAGS)
 
 options.o: options.c ./include/options.h
+	$(CC) -o $@ $^ $< $(CFLAGS)
+
+socket.o: socket.c ./include/socket.h
 	$(CC) -o $@ $^ $< $(CFLAGS)
 
 clean:
