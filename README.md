@@ -5,7 +5,7 @@ webserver
 
 Joachim Schmidt
 
-Felipe Paul Martins <felipe.paulmartins@outlook.com>
+Felipe Paul Martins
 
 ## Errors codes
 
