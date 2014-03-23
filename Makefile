@@ -13,6 +13,8 @@
 
 CC=gcc
 INCLUDES_FOLDERS=-I./include/
+DEFINE_OPT=-DOPTIONS_LONGUES 
+DEFINE=-D_GNU_SOURCES
 CFLAGS=-W -Wall -ansi -pedantic -g -ggdb -pg -std=gnu99 $(INCLUDES_FOLDERS)
 LDFLAGS=
 EXEC=webserver
@@ -23,10 +25,10 @@ webserver: main.o options.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 main.o: main.c ./include/options.h
-	$(CC) -o $@ $^ $< $(CFLAGS)
+	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
-options.o: options.c ./include/options.h
-	$(CC) -o $@ $^ $< $(CFLAGS)
+options.o: options.c ./include/options.h 
+	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE_OPT) $(DEFINE)
 
 clean:
 	rm -rf *.o
