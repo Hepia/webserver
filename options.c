@@ -26,6 +26,7 @@ void options(int argc, char *argv[],
     {{"port"   , 1, NULL, 'p'},
      {"options", 1, NULL, 'o'},
      {"help"   , 0, NULL, 'h'},
+     {"info"   , 0, NULL, 'i'},
      {NULL     , 0, NULL, 0}};
 #endif
     char *ret_environ = NULL;
@@ -213,4 +214,16 @@ void aide(char *nom_programme)
     fprintf(stdout, " OPT_SZ_LOG            Variable contenant la taille du fichiers de log en [Ko]\n");
     fprintf(stdout, " OPT_PATH_FLS          Variable contenant le chemin des fichiers html\n");
     fprintf(stdout, " OPT_MAX_CLI           Variable contenant le nombre maximum de clients simultanés\n");
+}
+
+void info(int argc, char *argv[],
+          char *port_srv, char *chemin_fichiers,
+          int taille_log, int max_connexion)
+{
+    fprintf(stdout, "Mini Serveur Web\n");
+    fprintf(stdout, "Port du serveur                : %s\n", port_srv);
+    fprintf(stdout, "Répertoire de travail          : %s\n", chemin_fichiers);
+    fprintf(stdout, "Taille des logs                : %d Ko\n", taille_log);
+    fprintf(stdout, "Nombre de clients authorisé    : %d\n", max_connexion);
+    fprintf(stdout, "Nombre de coeurs               : %d\n", 8);
 }
