@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "include/options.h"
+#include "include/socket.h"
 
 void testoption(int argc, char *argv[], 
                 char *port_srv, char *chemin_fichiers,
@@ -21,6 +22,7 @@ int main(int argc, char *argv[])
     testoption((argc - optind), &(argv[optind]), port_srv, chemin_fichiers,
                taille_log, max_connexion);
 
+	//create_socket(atoi(argv[1]));
     return EXIT_SUCCESS;
 }
 

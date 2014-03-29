@@ -30,6 +30,9 @@ main.o: main.c ./include/options.h
 options.o: options.c ./include/options.h 
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE_OPT) $(DEFINE)
 
+options.o: options.c ./include/socket.h
+	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
+
 clean:
 	rm -rf *.o
 
