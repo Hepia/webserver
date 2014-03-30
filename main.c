@@ -22,6 +22,8 @@ int main(int argc, char *argv[])
     testoption((argc - optind), &(argv[optind]), port_srv, chemin_fichiers,
                taille_log, max_connexion);
 
+    tcp_server(port_srv);
+
 	//create_socket(atoi(argv[1]));
     return EXIT_SUCCESS;
 }
@@ -33,7 +35,7 @@ void testoption(int argc, char *argv[],
     fprintf(stdout, "Mini Serveur Web\n");
     fprintf(stdout, "Le serveur écoute sur le port : %s\n", port_srv);
     fprintf(stdout, "La racine des fichiers HTML est : %s\n", chemin_fichiers);
-    fprintf(stdout, "La taille taille du fichier lod : %d Ko\n", taille_log);
+    fprintf(stdout, "La taille taille du fichier log : %d Ko\n", taille_log);
     fprintf(stdout, "Le nombre maximum de clients simultanés : %d\n", max_connexion);
 
     fprintf(stdout, "Argument supplémentaires : ");

@@ -21,7 +21,7 @@ EXEC=webserver
 
 all: $(EXEC)
 
-webserver: main.o options.o
+webserver: main.o options.o socket.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 main.o: main.c ./include/options.h
@@ -30,7 +30,7 @@ main.o: main.c ./include/options.h
 options.o: options.c ./include/options.h 
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE_OPT) $(DEFINE)
 
-options.o: options.c ./include/socket.h
+socket.o: socket.c ./include/socket.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
 clean:
