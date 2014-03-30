@@ -16,26 +16,28 @@
 
 #include "include/socket.h"
 
-int* create_socket_stream(const char *host_name, const char *serv_port, const char *proto_name)
+int* create_socket_stream(const char *host_name, const char *serv_port, 
+						  const char *proto_name)
 {
 	int *sock;
 	int port;
 	int status;
 	int i;
 	int yes = 1;
-	struct hostent *hostent;
-	struct servent *servent;
-	struct protoent *protoent;
 	int one_more_time = 4; // Nombre de tentative si l'adresse est déjà utilisé.
 
+	struct hostent  *hostent;
+	struct servent  *servent;
+	struct protoent *protoent;
+	
 	struct addrinfo hints;
 	struct addrinfo *res;
 	struct addrinfo *rp;
 
 	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = AF_UNSPEC; // IPv4 ou IPv6
+	hints.ai_family   = AF_UNSPEC; // IPv4 ou IPv6
 	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_PASSIVE;
+	hints.ai_flags 	  = AI_PASSIVE;
 	hints.ai_protocol = 0;
 
 	sock = calloc(2, sizeof(int));
@@ -142,6 +144,7 @@ int tcp_server(const char *port)
 {
 	int *sock_name;
 	int sock_connected[2];
+
 	struct sockaddr_in addr;
 	socklen_t len;
 
@@ -262,13 +265,12 @@ void process_connection(int sock)
 
 int print_socket_address(int sock, int where, char *ext_buffer)
 {
-	//struct in_addr inad4;
-	//struct in6_addr inad6;
-	struct sockaddr_in *addr4 = NULL;
+	struct sockaddr_in 	*addr4 = NULL;
 	struct sockaddr_in6 *addr6 = NULL;
-	struct sockaddr *addr = NULL;
+	struct sockaddr 	*addr  = NULL;
 	socklen_t len;
-	char buffer[TAILLE_READ_BUFFER];
+
+	char buffer [TAILLE_READ_BUFFER];
 	char bufferp[TAILLE_READ_BUFFER];
 
 	addr = calloc(1, sizeof(struct sockaddr));

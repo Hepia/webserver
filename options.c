@@ -127,7 +127,8 @@ void options(int argc, char *argv[],
     }
 }
 
-void sous_options(char *str_sous_opt, int *taille_log, int *max_cli, char **chemin_html)
+void sous_options(char *str_sous_opt, int *taille_log, 
+                  int *max_cli, char **chemin_html)
 {
     int  sousopt        = 0;
     int  valeur_log     = 0;

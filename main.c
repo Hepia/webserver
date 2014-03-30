@@ -24,7 +24,6 @@ int main(int argc, char *argv[])
 
     tcp_server(port_srv);
 
-	//create_socket(atoi(argv[1]));
     return EXIT_SUCCESS;
 }
 
