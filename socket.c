@@ -37,7 +37,7 @@
 int* create_socket_stream(const char *host_name, const char *serv_port, 
 						  const char *proto_name)
 {
-	int *sock;
+	int *sock; // Pointeur sur les deux sockets (IPv4 et IPv6).
 	int port;
 	int status;
 	int i;
@@ -52,14 +52,19 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 	struct addrinfo *res;
 	struct addrinfo *rp;
 
+	// Initialisation de la structure addrinfo à zéro.
 	memset(&hints, 0, sizeof(struct addrinfo));
+	// Paramètrage de la structure addrinfo.
 	hints.ai_family   = AF_UNSPEC; // IPv4 ou IPv6
-	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_socktype = SOCK_STREAM; // TCP.
 	hints.ai_flags 	  = AI_PASSIVE;
 	hints.ai_protocol = 0;
 
+	// Allocation de mémoire pour stocker les descripteurs des deux sockets.
 	sock = calloc(2, sizeof(int));
 
+	// Initialisation de la structure hostent à partir du nom d'hôte de la
+	// machine locale.
 	if(host_name != NULL)
 		if((hostent = gethostbyname(host_name)) == NULL)
 		{
@@ -67,14 +72,21 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 			return NULL;
 		}
 
+	// Initialisation de la structure protoent à partir du nom du protocole
+	// utilisé (TCP).
 	if((protoent = getprotobyname(proto_name)) == NULL)
 	{
 		perror("getprotobyname");
 		return NULL;
 	}
 
+	// Initialisation de la structure servent à partie du numéro du port.
+	// Cette structure est utile si on utilise un numéro de port inférieur
+	// à 1024. Dans ce cas, il faut que le programme soit Set-UID root ou
+	// qu'il possède la capacité CAP_NET_BIND_SERVICE.
 	if(serv_port != NULL)
 	{
+		// Test de la validité du numéro de port.
 		if(sscanf(serv_port, "%d", &port) == 1)
 		{
 			if(port < 0)
@@ -84,6 +96,7 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 			}
 			else if(port < NUM_PORT_MIN) // Uniquement si CAP_NET_BIND_SERVICE ou Set-UID root.
 			{
+				// Initialisation de la structure servent.
 				if((servent = getservbyport(htons(port), protoent->p_name)) == NULL)
 				{
 					perror("getservbyport");
@@ -103,6 +116,8 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 		}
 	}
 
+	// Initialisation de la structure addrinfo à partir du numéro
+	// du port d'écoute du serveur web.
 	if((status = getaddrinfo(NULL, serv_port, &hints, &res)) != 0)
 	{
 		perror("getaddrinfo");
@@ -110,26 +125,40 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 		return NULL;
 	}
 
+	// Affichage des différents services (IPv4 ou IPv6) disponible sur la machine hôte à
+	// partir de la structure addrinfo.
 	for(rp = res, i = 1; rp != NULL; rp = rp->ai_next, i++)
 	{
 		fprintf(stdout, "sevice [%d] = %s\n", i, 
 				(rp->ai_family != 2) ? ((rp->ai_family != 10) ? "UNDEF" : "IPv6") : "IPv4");
 	}
 
+	// Boucle de création des sockets et affectations des addresses sur les
+	// sockets précédement crées.
 	for(rp = res, i = 0; rp != NULL; rp = rp->ai_next, i++)
 	{
+		// En cas d'echec du bind et si la variable globale errno contient EADDRINUSE
+		// on a quatre tentative pour binder à nouveau.
 		one_more_time = 4;
 
+		// Création d'une nouvelle socket. En cas d'échec on passe à l'itération
+		// suivante.
 		if((sock[i] = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol)) < 0)
 			continue;
 
 		do
 		{
+			// On force la socket AF_INET6 a binder uniquement sur l'adresse IPv6
+			// de la machine.
 			if(rp->ai_family == AF_INET6)
 			{
 				setsockopt(sock[i], SOL_IPV6, IPV6_V6ONLY, &yes, sizeof(yes));
 			}
 
+			// Affectation d'une adresse à la nouvelle socket. En cas d'échec on teste
+			// la variable globale errno. Si celle-ci contient l'erreur EADDRINUSE on
+			// essaye une nouvelle tentative après avoir effectué une pause d'une demi
+			// seconde.
 			if(bind(sock[i], rp->ai_addr, rp->ai_addrlen) < 0)
 			{
 				if(errno == EADDRINUSE)
@@ -150,11 +179,13 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 			{
 				fprintf(stdout, "La famille d'adresse %s a été affecté à la socket sock[%d].\n", 
 						(rp->ai_addr->sa_family != 2) ? ((rp->ai_addr->sa_family != 10) ? "UNDEF" : "IPv6") : "IPv4", i);
+				// Condition de sortie de la boucle while.
 				one_more_time = 0;
 			}
 		}while(one_more_time > 0);
 	}
 
+	// On retourne un pointeur sur deux sockets. Une en IPv4 et une en IPv6.
 	return sock;
 }
 
@@ -166,38 +197,54 @@ int tcp_server(const char *port)
 	struct sockaddr_in addr;
 	socklen_t len;
 
+	// Création de deux sokets en fonction du numéro de port et du protocole
+	// TCP.
 	if((sock_name = create_socket_stream(NULL, port, "tcp")) == NULL)
 	{
 		fprintf(stderr, "L'appel à create_socket_stream a échoué.\n");
 		return -1;
 	}
 
+	// Etant donné que le processus père n'effectue pas de wait sur ses fils,
+	// on ignore le signal SIGCHLD afin que les processus fils ne deviennent
+	// pas des zombies.
 	signal(SIGCHLD, SIG_IGN);
 
+	// Création de deux procesus. Le processus fils sera à l'écoute sur la socket
+	// connecté à l'adresse IPv4 et le processus père sera à l'écoute sur la socket
+	// connecté à l'adresse IPv6.
 	switch(fork())
 	{
 		case 0 : // Processus fils écoute sur IPv4.
+			// Mise en écoute de nouvelles connexions sur la socket IPv4 et 
+			// dimenssionnement de la file d'attente.
 			listen(sock_name[0], TAILLE_FILE_ECOUTE);
 			fprintf(stdout, "Mon adresse >> ");
 
+			// Affichage de l'adresse IP locale.
 			if((print_socket_address(sock_name[0], LOCAL, NULL)) < 0)
 			{
 				fprintf(stderr, "L'appel à print_socket_address a échoué.\n");
 				return -1;
 			}
 
+			// On boucle tantque le serveur n'est pas interrompu.
 			while(!close_tcp_server())
 			{
 				len = sizeof(struct sockaddr_in);
+				// Connexion d'un client de la file d'attente sur une nouvelle
 				if((sock_connected[0] = accept(sock_name[0], (struct sockaddr *)&addr, &len)) < 0)
 				{
 					perror("accept");
 					return -1;
 				}
 
+				
 				switch(fork())
 				{
 					case 0 : // Processus fils.
+						// Le processus fils ferme le descripteur sock_name et traite
+						// la connexion à partir du descripteur sock_connected.
 						close(sock_name[0]);
 						process_connection(sock_connected[0]);
 						exit(EXIT_SUCCESS);
@@ -219,9 +266,12 @@ int tcp_server(const char *port)
 			return -1;
 
 		default : // Processus père écoute sur IPv6.
+			// Mise en écoute de nouvelles connexions sur la socket IPv6 et
+			// dimenssionnement de la file d'attente.
 			listen(sock_name[1], TAILLE_FILE_ECOUTE);
 			fprintf(stdout, "Mon adresse >> ");
 
+			// Affichage de l'adresse IP locale.
 			if((print_socket_address(sock_name[1], LOCAL, NULL)) < 0)
 			{
 				fprintf(stderr, "L'appel à print_socket_address a échoué.\n");
