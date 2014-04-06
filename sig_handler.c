@@ -18,27 +18,46 @@
  * Authors: Felipe Paul Martins, Joachim Schmidt
  */
 
-#ifndef _OPTION_H_
-#define _OPTION_H_
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
+#include <errno.h>
 
-// Liste des variables d'environnement.
-// ------------------------------------
-// OPT_PRT_DFLT
-// OPT_SZ_LOG
-// OPT_PATH_FLS
-// OPT_MAX_CLI
+#include "include/sig_handler.h"
 
-#define PORT_SERVEUR_DEFAUT   "4321"
-#define TAILLE_FICHIER_LOG    1024
-#define CHEMIN_FICHIERS_HTML  "./"
-#define MAX_CONNEXION_CLIENTS 10
+struct sigaction *list_action;
 
-void options 	 (int argc, char *argv[], 
-             	  char **port_srv, char **chemin_fichiers, 
-             	  int *taille_log, int *max_connexion);
-void sous_options(char *sousopt, int *taille_log, int *max_cli, char **path_html);
-void aide 		 (char *nom_programme);
-void info(char *port_srv, char *chemin_fichiers,
-          int taille_log, int max_connexion);
+void init_handler(struct sigaction *list_action)
+{
+	list_action = calloc(1, sizeof(struct sigaction));
 
-#endif
+	list_action->sa_handler = handler;
+	sigemptyset(&(list_action->sa_mask));
+	list_action->sa_flags = 0;
+
+	if(sigaction(SIGINT, list_action, NULL) != 0)
+	{
+		perror("sigaction");
+		exit(EXIT_FAILURE);
+	}
+}
+
+void delete_handler(struct sigaction *list_action)
+{
+	free(list_action);
+}
+
+void handler(int num)
+{
+	switch(num)
+	{
+		case SIGINT :
+			fprintf(stdout, "Processus %d : signal SIGINT\nInterruption du processus\n", getpid());
+			delete_handler(list_action);
+			exit(EXIT_SUCCESS);
+
+		default :
+			break;
+	}
+}

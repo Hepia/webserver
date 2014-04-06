@@ -35,13 +35,13 @@ CC=gcc
 INCLUDES_FOLDERS=-I./include/
 DEFINE_OPT=-DOPTIONS_LONGUES 
 DEFINE=-D_GNU_SOURCES
-CFLAGS=-W -Wall -ansi -pedantic -g -ggdb -pg -std=gnu99 $(INCLUDES_FOLDERS)
+CFLAGS=-W -Wall -ansi -pedantic -g -ggdb -pg -std=gnu99 -Wno-unused-but-set-variable $(INCLUDES_FOLDERS)
 LDFLAGS=
 EXEC=webserver
 
 all: $(EXEC)
 
-webserver: main.o options.o socket.o
+webserver: main.o options.o socket.o sig_handler.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 main.o: main.c ./include/options.h
@@ -51,6 +51,9 @@ options.o: options.c ./include/options.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE_OPT) $(DEFINE)
 
 socket.o: socket.c ./include/socket.h
+	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
+
+sig_handler.o: sig_handler.c ./include/sig_handler.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
 clean:

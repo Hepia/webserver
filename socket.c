@@ -34,6 +34,13 @@
 
 #include "include/socket.h"
 
+/*
+ * La fonction create_socket_stream ouvre une socket IPv4 et une socket
+ * IPv6 sur un port choisi.
+ * Ces deux sockets sont renvoyées sous la forme d'un tableau contenant
+ * deux entiers (descripteurs de fichier).
+ */
+
 int* create_socket_stream(const char *host_name, const char *serv_port, 
 						  const char *proto_name)
 {
@@ -42,6 +49,7 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 	int status;
 	int i;
 	int yes = 1;
+		int reuse_addr = 1;
 	int one_more_time = 4; // Nombre de tentative si l'adresse est déjà utilisé.
 
 	struct hostent  *hostent;
@@ -146,15 +154,16 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 		if((sock[i] = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol)) < 0)
 			continue;
 
+		// Permet de relancer immédiatement un serveur TCP que l'on vient d'interrompre.
+		setsockopt(sock[i], SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(int));
+
+		// On force la socket AF_INET6 a binder uniquement sur l'adresse IPv6
+		// de la machine.
+		if(rp->ai_family == AF_INET6)
+			setsockopt(sock[i], SOL_IPV6, IPV6_V6ONLY, &yes, sizeof(int));
+
 		do
 		{
-			// On force la socket AF_INET6 a binder uniquement sur l'adresse IPv6
-			// de la machine.
-			if(rp->ai_family == AF_INET6)
-			{
-				setsockopt(sock[i], SOL_IPV6, IPV6_V6ONLY, &yes, sizeof(yes));
-			}
-
 			// Affectation d'une adresse à la nouvelle socket. En cas d'échec on teste
 			// la variable globale errno. Si celle-ci contient l'erreur EADDRINUSE on
 			// essaye une nouvelle tentative après avoir effectué une pause d'une demi
@@ -189,10 +198,18 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 	return sock;
 }
 
+/*
+ * La fonction tcp_server appel la fonction create_socket_stream. Lorsque les deux sockets sont
+ * renvoyée, la fonction met un processus en écoute sur la socket liée à l'adresse IPv4 et un
+ * autre processus en écoute sur la socket liée à l'adresse IPv6.
+ * Lorsqu'un client se connecte sur l'une des deux sockets, un nouveau processus est crée pour
+ * traiter indépendament cette connexion.
+ */
+
 int tcp_server(const char *port)
 {
 	int *sock_name;
-	int sock_connected[2];
+	int sock_connected;
 
 	struct sockaddr_in addr;
 	socklen_t len;
@@ -232,30 +249,32 @@ int tcp_server(const char *port)
 			while(!close_tcp_server())
 			{
 				len = sizeof(struct sockaddr_in);
-				// Connexion d'un client de la file d'attente sur une nouvelle
-				if((sock_connected[0] = accept(sock_name[0], (struct sockaddr *)&addr, &len)) < 0)
+				// Connexion d'un client de la file d'attente sur une nouvelle socket.
+				if((sock_connected = accept(sock_name[0], (struct sockaddr *)&addr, &len)) < 0)
 				{
 					perror("accept");
 					return -1;
 				}
 
-				
+				// La connexion liée à la nouvelle socket créer par l'appel système accept sera traitée
+				// par le processus fils.
 				switch(fork())
 				{
 					case 0 : // Processus fils.
 						// Le processus fils ferme le descripteur sock_name et traite
 						// la connexion à partir du descripteur sock_connected.
 						close(sock_name[0]);
-						process_connection(sock_connected[0]);
+						process_connection(sock_connected); // Traitement de la connexion.
 						exit(EXIT_SUCCESS);
 
-					case -1 :
+					case -1 : // L'appel système fork a échoué.
 						perror("fork");
 						return -1;
 
 					default : // Processus père.
-						close(sock_connected[0]);
-
+						// Le processus père ferme son descripteur sur la nouvelle socket crée
+						// par l'appel système accept.
+						close(sock_connected);
 				}
 			}
 
@@ -278,29 +297,36 @@ int tcp_server(const char *port)
 				return -1;
 			}
 
+			// On boucle tantque le serveur n'est pas interrompu.
 			while(!close_tcp_server())
 			{
 				len = sizeof(struct sockaddr_in);
-				if((sock_connected[1] = accept(sock_name[1], (struct sockaddr *)&addr, &len)) < 0)
+				// Connexion d'un client de la file d'attente sur une nouvelle socket.
+				if((sock_connected = accept(sock_name[1], (struct sockaddr *)&addr, &len)) < 0)
 				{
 					perror("accept");
 					return -1;
 				}
 
+				// La connexion liée à la nouvelle socket créer par l'appel système accept sera traitée
+				// par le processus fils.
 				switch(fork())
 				{
 					case 0 : // Processus fils.
+						// Le processus fils ferme le descripteur sock_name et traite
+						// la connexion à partir du descripteur sock_connected.
 						close(sock_name[1]);
-						process_connection(sock_connected[1]);
+						process_connection(sock_connected); // Traitement de la connexion.
 						exit(EXIT_SUCCESS);
 
-					case -1 :
+					case -1 : // L'appel système fork a échoué.
 						perror("fork");
 						return -1;
 
 					default : // Processus père.
-						close(sock_connected[1]);
-
+						// Le processus père ferme son descripteur sur la nouvelle socket crée
+						// par l'appel système accept.
+						close(sock_connected);
 				}
 			}
 
@@ -310,29 +336,71 @@ int tcp_server(const char *port)
 	return 0;
 }
 
+/*
+ * La fonction close_tcp_server renvoie pour l'instant la valeur de 0.
+ */
+
 int close_tcp_server(void)
 {
 	return 0;
 }
 
+/*
+ * La fonction process_connection affiche l'adresse IP du serveur local et
+ * l'adresse IP du client distant. Elle envoie également un message au client
+ * contenant sa propre adresse IP. Pour finir, elle lit le flux envoyé sur la
+ * socket par le client.
+ */
+
 void process_connection(int sock)
 {
 	char buffer[TAILLE_READ_BUFFER];
+	char buffer2[2] = {0, 0};
 
+	int nb_read = 0;
+
+	// Affichage de l'adresse IP du serveur local.
 	fprintf(stdout, "Connexion : locale ");
 	print_socket_address(sock, LOCAL, NULL);
 
+	// Affichage de l'adresse IP du client distant.
 	fprintf(stdout, "		   distante ");
 	print_socket_address(sock, DISTANT, buffer);
 
+	// Envoi d'un message au client contenant son adresse IP en écrivant
+	// sur la socket.
 	write(sock, "Votre adresse : ", 16);
 	write(sock, buffer, strlen(buffer));
 
+	// Boucle de lecture du flux depuis la socket et d'écriture
+	// du flux sur la sortie standard.
+	while(buffer2[0] != EOF)
+	{
+		if((nb_read = read(sock, buffer2, 1)) == 0)
+			break;
+
+		if(nb_read < 0)
+		{
+			perror("read");
+			break;
+		}
+
+		write(1, buffer2, 1);
+	}
+
+	// Fermeture de la socket.
 	close(sock);
 }
 
+/*
+ * La fonction print_socket_address affiche l'adresse IPv4 ou IPv6 du serveur local ou
+ * l'adresse IPvç ou IPv6 du client distant. Cette adresse peut être copié dans un buffer
+ * externe à la fonction.
+ */
+
 int print_socket_address(int sock, int where, char *ext_buffer)
 {
+	// Structures pour contenir les adresse IPv4 ou IPv6.
 	struct sockaddr_in 	*addr4 = NULL;
 	struct sockaddr_in6 *addr6 = NULL;
 	struct sockaddr 	*addr  = NULL;
@@ -341,55 +409,67 @@ int print_socket_address(int sock, int where, char *ext_buffer)
 	char buffer [TAILLE_READ_BUFFER];
 	char bufferp[TAILLE_READ_BUFFER];
 
+	// Pointeur de fonction, pointant soit sur l'appel système getsockname ou sur l'appel
+	// système getpeername.
+	int (*getname)(int, struct sockaddr *, socklen_t *);
+
 	addr = calloc(1, sizeof(struct sockaddr));
 	len = sizeof(struct sockaddr);
-	
+
+	// Si where == LOCAL, alors on utilisera l'appel système getsockname pour obtenir
+	// les infromations du serveur local liée à la socket.
+	// Si where == DISTANT, alors on utilisera l'appel système getpeername pour obtenir
+	// les information du client distant liée à la socket.
 	if(where == 0)
-	{
-		if(getsockname(sock, addr, &len) < 0)
-		{
-			perror("getsockname");
-			return -1;
-		}
-	}
+		getname = getsockname;
 	else if(where == 1)
-	{
-		if(getpeername(sock, addr, &len) < 0)
-		{
-			perror("getpeername");
-			return -1;
-		}
-	}
+		getname = getpeername;
 	else
 	{
 		fprintf(stderr, "Le paramètre where est erroné.\n");
 		return -1;
 	}
 
+	// On cherche à obetnir la famille de la socket.
+	if(getname(sock, addr, &len) < 0)
+	{
+		perror("getsockname or getpeername");
+		return -1;
+	}
+
+	// On teste la famille de la socket.
 	switch(addr->sa_family)
 	{
-		case AF_INET :
+		case AF_INET : // Famille == IPv4.
 			len = sizeof(struct sockaddr_in);
 			addr4 = calloc(1, sizeof(struct sockaddr_in));
-			if(getsockname(sock, (struct sockaddr *)addr4, &len) < 0)
+			// On rempli la structure sockaddr_in correspondant à une socket connectée
+			// sur une adresse IPv4.
+			if(getname(sock, (struct sockaddr *)addr4, &len) < 0)
 			{
 				perror("getsockname");
 				return -1;
 			}
+			// Network to presentation.
+			// Conversion de l'adresse IP au format réseau en notation pointée.
 			inet_ntop(AF_INET, (void *)&(addr4->sin_addr), buffer, 256);
 			strcpy(bufferp, "IPv4 = ");
 			strcat(bufferp, buffer);
 
 			break;
 
-		case AF_INET6 :
+		case AF_INET6 : // Famille == IPv6.
 			len = sizeof(struct sockaddr_in6);
 			addr6 = calloc(1, sizeof(struct sockaddr_in6));
-			if(getsockname(sock, (struct sockaddr *)addr6, &len) < 0)
+			// On rempli la structure sockaddr_in correspondant à une socket connectée
+			// sur une adresse IPv6.
+			if(getname(sock, (struct sockaddr *)addr6, &len) < 0)
 			{
 				perror("getsockname");
 				return -1;
 			}
+			// Network to presentation.
+			// Conversion de l'adresse IP au format réseau en notation pointée.
 			inet_ntop(AF_INET6, (void *)&(addr6->sin6_addr), buffer, 256);
 			strcpy(bufferp, "IPv6 = ");
 			strcat(bufferp, buffer);
@@ -400,6 +480,7 @@ int print_socket_address(int sock, int where, char *ext_buffer)
 	fprintf(stdout, "%s, Port = %u\n", bufferp, 
 			(addr4 != NULL) ? ntohs(addr4->sin_port) : ntohs(addr6->sin6_port));
 
+	// Copie du buffer dans un buffer externe à la fonction.
 	if(ext_buffer != NULL)
 	{
 		strcpy(ext_buffer, bufferp);

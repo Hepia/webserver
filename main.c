@@ -25,6 +25,9 @@
 
 #include "include/options.h"
 #include "include/socket.h"
+#include "include/sig_handler.h"
+
+extern struct sigaction *list_action;
 
 void testoption(int argc, char *argv[], 
                 char *port_srv, char *chemin_fichiers,
@@ -36,6 +39,8 @@ int main(int argc, char *argv[])
     static char *chemin_fichiers = CHEMIN_FICHIERS_HTML;
     int         taille_log       = TAILLE_FICHIER_LOG;
     int         max_connexion    = MAX_CONNEXION_CLIENTS;
+
+    init_handler(list_action);
 
     options(argc, argv, &port_srv, &chemin_fichiers,
             &taille_log, &max_connexion);

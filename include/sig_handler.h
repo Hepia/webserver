@@ -17,28 +17,15 @@
  * 
  * Authors: Felipe Paul Martins, Joachim Schmidt
  */
+ 
+#include <signal.h>
+#include <unistd.h>
 
-#ifndef _OPTION_H_
-#define _OPTION_H_
+#ifndef _SIG_HANDLER_H_
+#define _SIG_HANDLER_H_
 
-// Liste des variables d'environnement.
-// ------------------------------------
-// OPT_PRT_DFLT
-// OPT_SZ_LOG
-// OPT_PATH_FLS
-// OPT_MAX_CLI
-
-#define PORT_SERVEUR_DEFAUT   "4321"
-#define TAILLE_FICHIER_LOG    1024
-#define CHEMIN_FICHIERS_HTML  "./"
-#define MAX_CONNEXION_CLIENTS 10
-
-void options 	 (int argc, char *argv[], 
-             	  char **port_srv, char **chemin_fichiers, 
-             	  int *taille_log, int *max_connexion);
-void sous_options(char *sousopt, int *taille_log, int *max_cli, char **path_html);
-void aide 		 (char *nom_programme);
-void info(char *port_srv, char *chemin_fichiers,
-          int taille_log, int max_connexion);
+void init_handler  (struct sigaction *list_action);
+void delete_handler(struct sigaction *list_action);
+void handler 	   (int num);
 
 #endif

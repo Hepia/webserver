@@ -116,9 +116,9 @@ void options(int argc, char *argv[],
     while(1)
     {
     #ifdef OPTIONS_LONGUES
-        options = getopt_long(argc, argv, "p:o:h", opt_long, &index);
+        options = getopt_long(argc, argv, "p:o:h:i", opt_long, &index);
     #else
-        options = getopt(argc, argv, "p:o:h");
+        options = getopt(argc, argv, "p:o:h:i");
     #endif
 
         if(options == -1) break;
@@ -139,6 +139,11 @@ void options(int argc, char *argv[],
 
             case 'h' :
                 aide(argv[0]);
+                exit(EXIT_SUCCESS);
+
+            case 'i' :
+                info(*port_srv, *chemin_fichiers,
+                     *taille_log, *max_connexion);
                 exit(EXIT_SUCCESS);
 
             default :
@@ -237,8 +242,7 @@ void aide(char *nom_programme)
     fprintf(stdout, " OPT_MAX_CLI           Variable contenant le nombre maximum de clients simultanés\n");
 }
 
-void info(int argc, char *argv[],
-          char *port_srv, char *chemin_fichiers,
+void info(char *port_srv, char *chemin_fichiers,
           int taille_log, int max_connexion)
 {
     fprintf(stdout, "Mini Serveur Web\n");
