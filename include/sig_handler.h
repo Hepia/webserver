@@ -24,6 +24,10 @@
 #ifndef _SIG_HANDLER_H_
 #define _SIG_HANDLER_H_
 
+/*
+ * Prototypes des fonctions de gestion des signaux.
+ */
+
 void init_handler  (struct sigaction *list_action);
 void delete_handler(struct sigaction *list_action);
 void handler 	   (int num);

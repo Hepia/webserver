@@ -28,17 +28,26 @@
 // OPT_PATH_FLS
 // OPT_MAX_CLI
 
+/*
+ * Valeurs par défaut, si aucune option n'est passée en paramètre au programme et
+ * si aucune variable d'environnement n'est définie.
+ */
+
 #define PORT_SERVEUR_DEFAUT   "4321"
 #define TAILLE_FICHIER_LOG    1024
 #define CHEMIN_FICHIERS_HTML  "./"
 #define MAX_CONNEXION_CLIENTS 10
+
+/*
+ * Prototypes des fonctions de gestion des options.
+ */
 
 void options 	 (int argc, char *argv[], 
              	  char **port_srv, char **chemin_fichiers, 
              	  int *taille_log, int *max_connexion);
 void sous_options(char *sousopt, int *taille_log, int *max_cli, char **path_html);
 void aide 		 (char *nom_programme);
-void info(char *port_srv, char *chemin_fichiers,
-          int taille_log, int max_connexion);
+void info		 (char *port_srv, char *chemin_fichiers,
+				  int taille_log, int max_connexion);
 
 #endif

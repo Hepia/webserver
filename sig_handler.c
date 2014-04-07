@@ -28,14 +28,23 @@
 
 struct sigaction *list_action;
 
+/*
+ * La fonction init_handler alloue dynamiquement de la mémoire pour une structure
+ * sigaction, paramètre cette structure et défini les signaux UNIX à traiter.
+ */
+
 void init_handler(struct sigaction *list_action)
 {
+	// Allocation dynamique.
 	list_action = calloc(1, sizeof(struct sigaction));
 
+	// Liaison de la structure avec la fonction handler.
 	list_action->sa_handler = handler;
 	sigemptyset(&(list_action->sa_mask));
+	// Paramètrage du comportement des signaux.
 	list_action->sa_flags = 0;
 
+	// liaison du signal SIGINT avec la structure sigaction.
 	if(sigaction(SIGINT, list_action, NULL) != 0)
 	{
 		perror("sigaction");
@@ -43,18 +52,29 @@ void init_handler(struct sigaction *list_action)
 	}
 }
 
+/*
+ * La fonction delete_handler libère la mémoire allouée pour la structure
+ * sigaction.
+ */
+
 void delete_handler(struct sigaction *list_action)
 {
 	free(list_action);
 }
 
+/*
+ * La fonction handler est le gestionnaire de signaux qui est appelé lorsqu'un
+ * signal unix est envoyé au serveur.
+ */
+
 void handler(int num)
 {
 	switch(num)
 	{
-		case SIGINT :
+		case SIGINT : // Capture du signal SIGINT.
 			fprintf(stdout, "Processus %d : signal SIGINT\nInterruption du processus\n", getpid());
 			delete_handler(list_action);
+			// On termine les processus proprement.
 			exit(EXIT_SUCCESS);
 
 		default :

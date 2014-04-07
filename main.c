@@ -27,31 +27,52 @@
 #include "include/socket.h"
 #include "include/sig_handler.h"
 
+/*
+ * Variable externe se trouvant dans le fichier sig_handler.c.
+ */
+ 
 extern struct sigaction *list_action;
+
+/*
+ * Prototype des fonctions propres au fichier main.c.
+ */
 
 void testoption(int argc, char *argv[], 
                 char *port_srv, char *chemin_fichiers,
                 int taille_log, int max_connexion);
 
+/*
+ * Point d'entrée principale du programme.
+ */
+				
 int main(int argc, char *argv[])
 {
+	// Définition par défaut des variables utiles au programme.
     static char *port_srv        = PORT_SERVEUR_DEFAUT;
     static char *chemin_fichiers = CHEMIN_FICHIERS_HTML;
     int         taille_log       = TAILLE_FICHIER_LOG;
     int         max_connexion    = MAX_CONNEXION_CLIENTS;
-
+	
+	// Initialisation du gestionnaire de signaux.
     init_handler(list_action);
 
+	// Traitement des options passée en paramètre.
     options(argc, argv, &port_srv, &chemin_fichiers,
             &taille_log, &max_connexion);
+	// Test du bon fonctionnement des options après traitement.
     testoption((argc - optind), &(argv[optind]), port_srv, chemin_fichiers,
                taille_log, max_connexion);
 
+	// Lancement du serveur TCP/IP.
     tcp_server(port_srv);
 
     return EXIT_SUCCESS;
 }
 
+/*
+ * La fonction testoption, test les options passées en paramètre au programme.
+ */
+ 
 void testoption(int argc, char *argv[], 
                 char *port_srv, char *chemin_fichiers,
                 int taille_log, int max_connexion)
