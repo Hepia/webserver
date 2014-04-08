@@ -39,15 +39,49 @@
 #define DISTANT 			1
 
 /*
+ * La structure server_process contient deux pointeurs sur des fonctions. L'une
+ * correspond au code du processus fils et l'autre correspond au code du processus
+ * père. Cette structure peut également stocker une ou des sockets.
+ */
+
+struct server_process
+{
+	int(*ptr_process[2])(int *);
+	int *sock;
+};
+
+/*
  * Prototypes des fonctions de gestion des sockets et des communications
  * réseaux.
  */
 
-int* create_socket_stream(const char *host_name, const char *serv_port, 
-						  const char *proto_name);
-int  tcp_server 		 (const char *port);
-int  close_tcp_server 	 (void);
-void process_connection  (int sock);
-int  print_socket_address(int sock, int where, char *ext_buffer);
+int* 					create_socket_stream (const char *host_name, const char *serv_port, 
+						  					  const char *proto_name);
+int  					tcp_server 		 	 (const char *port);
+int  					close_tcp_server 	 (void);
+void 					process_connection   (int sock);
+int  					print_socket_address (int sock, int where, char *ext_buffer);
+
+/*
+ * Prototypes des fonctions correspondant au code des processus fils ou des processus
+ * père.
+ */
+
+int  					ipv4_process		 (int *sock_name);
+int  					ipv6_process		 (int *sock_name);
+
+int 					child_process 		 (int *sock_name);
+int 					father_process 		 (int *sock_name);
+
+/*
+ * Prototypes des fonctions pour traiter la structure server_process et pour 
+ * créer les nouveaux processus.
+ */
+
+struct server_process * init_server_process	 (int (*ptr_child_process)(int *), 
+											  int (*ptr_father_process)(int *),
+											  int *sock);
+void 					delete_server_process(struct server_process *ptr_sp);
+int 					call_fork			 (int val, struct server_process *ptr_sp);
 
 #endif
