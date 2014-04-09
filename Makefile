@@ -41,16 +41,19 @@ EXEC=webserver
 
 all: $(EXEC)
 
-webserver: main.o options.o socket.o sig_handler.o
+webserver: main.o options.o socket.o sig_handler.o process_management.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-main.o: main.c ./include/options.h
+main.o: main.c ./include/options.h ./include/server_const.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
-options.o: options.c ./include/options.h 
+options.o: options.c ./include/options.h ./include/server_const.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE_OPT) $(DEFINE)
 
-socket.o: socket.c ./include/socket.h
+socket.o: socket.c ./include/socket.h ./include/process_management.h ./include/server_const.h
+	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
+
+process_management.o: process_management.c ./include/process_management.h ./include/server_const.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
 sig_handler.o: sig_handler.c ./include/sig_handler.h

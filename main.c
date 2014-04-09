@@ -26,6 +26,7 @@
 #include "include/options.h"
 #include "include/socket.h"
 #include "include/sig_handler.h"
+#include "include/server_const.h"
 
 /*
  * Variable externe se trouvant dans le fichier sig_handler.c.

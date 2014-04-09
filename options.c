@@ -30,6 +30,7 @@
 #endif
 
 #include "include/options.h"
+#include "include/server_const.h"
 
 /*
  * La fonction options traite les options courtes, les options longues GNU si la constante
