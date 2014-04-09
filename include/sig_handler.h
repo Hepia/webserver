@@ -30,6 +30,6 @@
 
 void init_handler  (struct sigaction *list_action);
 void delete_handler(struct sigaction *list_action);
-void handler 	   (int num);
+void handler       (int num);
 
 #endif

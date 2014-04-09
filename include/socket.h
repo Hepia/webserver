@@ -38,11 +38,11 @@ struct server_process
  * réseaux.
  */
 
-int* 					create_socket_stream (const char *host_name, const char *serv_port, 
-						  					  const char *proto_name);
-int  					tcp_server 		 	 (const char *port);
-int  					close_tcp_server 	 (void);
-void 					process_connection   (int sock);
-int  					print_socket_address (int sock, int where, char *ext_buffer);
+int* create_socket_stream(const char *host_name, const char *serv_port, 
+                          const char *proto_name);
+int  tcp_server 		  (const char *port);
+int  close_tcp_server 	  (void);
+void process_connection   (int sock);
+int  print_socket_address (int sock, int where, char *ext_buffer);
 
 #endif

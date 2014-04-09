@@ -27,20 +27,20 @@
  */
 
 struct server_process * init_server_process	 (int (*ptr_child_process)(void *), 
-											  int (*ptr_father_process)(void *),
-											  int *sock);
-void 					delete_server_process(struct server_process *ptr_sp);
-int 					call_fork			 (int val, struct server_process *ptr_sp);
+                                              int (*ptr_father_process)(void *),
+                                              int *sock);
+void                    delete_server_process(struct server_process *ptr_sp);
+int                     call_fork            (int val, struct server_process *ptr_sp);
 
 /*
  * Prototypes des fonctions correspondant au code des processus fils ou des processus
  * père.
  */
 
-int  					ipv4_process		 (void *data);
-int  					ipv6_process		 (void *data);
+int                     ipv4_process         (void *data);
+int                     ipv6_process         (void *data);
 
-int 					child_process 		 (void *data);
-int 					father_process 		 (void *data);
+int                     child_process        (void *data);
+int                     father_process       (void *data);
 
 #endif

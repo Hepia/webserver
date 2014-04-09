@@ -25,12 +25,12 @@
  * Prototypes des fonctions de gestion des options.
  */
 
-void options 	 (int argc, char *argv[], 
-             	  char **port_srv, char **chemin_fichiers, 
-             	  int *taille_log, int *max_connexion);
+void options     (int argc, char *argv[], 
+                  char **port_srv, char **chemin_fichiers, 
+                  int *taille_log, int *max_connexion);
 void sous_options(char *sousopt, int *taille_log, int *max_cli, char **path_html);
-void aide 		 (char *nom_programme);
-void info		 (char *port_srv, char *chemin_fichiers,
-				  int taille_log, int max_connexion);
+void aide        (char *nom_programme);
+void info        (char *port_srv, char *chemin_fichiers,
+                  int taille_log, int max_connexion);
 
 #endif
