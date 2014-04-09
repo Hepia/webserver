@@ -46,8 +46,8 @@
 
 struct server_process
 {
-	int(*ptr_process[2])(int *);
-	int *sock;
+	int(*ptr_process[2])(void *);
+	void *data;
 };
 
 /*
@@ -67,19 +67,19 @@ int  					print_socket_address (int sock, int where, char *ext_buffer);
  * père.
  */
 
-int  					ipv4_process		 (int *sock_name);
-int  					ipv6_process		 (int *sock_name);
+int  					ipv4_process		 (void *data);
+int  					ipv6_process		 (void *data);
 
-int 					child_process 		 (int *sock_name);
-int 					father_process 		 (int *sock_name);
+int 					child_process 		 (void *data);
+int 					father_process 		 (void *data);
 
 /*
  * Prototypes des fonctions pour traiter la structure server_process et pour 
  * créer les nouveaux processus.
  */
 
-struct server_process * init_server_process	 (int (*ptr_child_process)(int *), 
-											  int (*ptr_father_process)(int *),
+struct server_process * init_server_process	 (int (*ptr_child_process)(void *), 
+											  int (*ptr_father_process)(void *),
 											  int *sock);
 void 					delete_server_process(struct server_process *ptr_sp);
 int 					call_fork			 (int val, struct server_process *ptr_sp);

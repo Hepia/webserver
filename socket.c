@@ -402,21 +402,23 @@ int print_socket_address(int sock, int where, char *ext_buffer)
  * connexions en IPv4.
  */
 
-int ipv4_process(int *sock_name)
+int ipv4_process(void *data)
 {
-	int sock_connected;
 	struct sockaddr_in addr;
 	socklen_t len;
+
 	struct server_process *psp;
 
+	int sock_connected;
+	int *sock_name = (int *)data;
 	// Couple de socket à passer en paramètre lors du fork.
 	int **sock_process = calloc(2, sizeof(int *));
 
-	sock_process[0] = &sock_name[0];
+	sock_process[0] = &sock_name[0]; // Indice [0] représente la socket IPv4.
 	sock_process[1] = &sock_connected;
 
 	// Initialisation de la structure server_process.
-	psp = init_server_process(child_process, father_process, (int *)sock_process);
+	psp = init_server_process(child_process, father_process, (void *)sock_process);
 
 	listen(sock_name[0], TAILLE_FILE_ECOUTE);
 
@@ -457,21 +459,23 @@ int ipv4_process(int *sock_name)
  * connexions en IPv6.
  */
 
-int ipv6_process(int *sock_name)
+int ipv6_process(void *data)
 {
-	int sock_connected;
 	struct sockaddr_in addr;
 	socklen_t len;
+
 	struct server_process *psp;
 
+	int sock_connected;
+	int *sock_name = (int *)data;
 	// Couple de socket à passer en paramètre lors du fork.
 	int **sock_process = calloc(2, sizeof(int *));
 
-	sock_process[0] = &sock_name[1];
+	sock_process[0] = &sock_name[1]; // Indice [1] représente la socket IPv6.
 	sock_process[1] = &sock_connected;
 
 	// Initialisation de la structure server_process.
-	psp = init_server_process(child_process, father_process, (int *)sock_process);
+	psp = init_server_process(child_process, father_process, (void *)sock_process);
 
 	listen(sock_name[1], TAILLE_FILE_ECOUTE);
 	fprintf(stdout, "Mon adresse >> ");
@@ -511,9 +515,9 @@ int ipv6_process(int *sock_name)
  * traiter une nouvelle connexion sur l'une socket IPv4 ou IPv6.
  */
 
-int child_process(int *sock_name)
+int child_process(void *data)
 {
-	int **sock = (int **)sock_name;
+	int **sock = (int **)data;
 
 	close(*(sock[0]));
 	process_connection(*(sock[1])); // Traitement de la connexion.
@@ -526,9 +530,9 @@ int child_process(int *sock_name)
  * connexion.
  */
 
-int father_process(int *sock_name)
+int father_process(void *data)
 {
-	int **sock = (int **)sock_name;
+	int **sock = (int **)data;
 
 	close(*(sock[1]));
 
@@ -542,8 +546,8 @@ int father_process(int *sock_name)
  * la fonction retourne un pointeur sur la nouvelle structure server_process.
  */
 
-struct server_process * init_server_process(int (*ptr_child_process)(int *), 
-											int (*ptr_father_process)(int *),
+struct server_process * init_server_process(int (*ptr_child_process)(void *), 
+											int (*ptr_father_process)(void *),
 											int *sock)
 {
 	struct server_process *psp;
@@ -558,7 +562,7 @@ struct server_process * init_server_process(int (*ptr_child_process)(int *),
 	// Référencement des fonctions à l'aide des pointeurs.
 	psp->ptr_process[0] = ptr_child_process;
 	psp->ptr_process[1] = ptr_father_process;
-	psp->sock = sock;
+	psp->data = (void *)sock;
 
 	return psp;
 }
@@ -580,7 +584,7 @@ void delete_server_process(struct server_process *ptr_sp)
 int call_fork(int val, struct server_process *ptr_sp)
 {
 	if(val < 0) return -1;
-	(*ptr_sp->ptr_process[((!val) ? 0 : 1)])(ptr_sp->sock);
+	(*ptr_sp->ptr_process[((!val) ? 0 : 1)])((void *)ptr_sp->data);
 
 	return EXIT_SUCCESS;
 }
