@@ -22,27 +22,15 @@
 #define _SOCKET_H_
 
 /*
- * La structure server_process contient deux pointeurs sur des fonctions. L'une
- * correspond au code du processus fils et l'autre correspond au code du processus
- * père. Cette structure peut également stocker une ou des sockets.
- */
-
-struct server_process
-{
-	int(*ptr_process[2])(void *);
-	void *data;
-};
-
-/*
  * Prototypes des fonctions de gestion des sockets et des communications
  * réseaux.
  */
 
 int* create_socket_stream(const char *host_name, const char *serv_port, 
                           const char *proto_name);
-int  tcp_server 		  (const char *port);
-int  close_tcp_server 	  (void);
-void process_connection   (int sock);
-int  print_socket_address (int sock, int where, char *ext_buffer);
+int  tcp_server 		 (const char *port);
+int  close_tcp_server 	 (void);
+void process_connection  (int sock);
+int  print_socket_address(int sock, int where, char *ext_buffer);
 
 #endif

@@ -22,6 +22,18 @@
 #define _PROCESS_MANAGEMENT_H_
 
 /*
+ * La structure server_process contient deux pointeurs sur des fonctions. L'une
+ * correspond au code du processus fils et l'autre correspond au code du processus
+ * père. Cette structure peut également stocker une ou des sockets.
+ */
+
+struct server_process
+{
+	int(*ptr_process[2])(void *);
+	void *data;
+};
+
+/*
  * Prototypes des fonctions pour traiter la structure server_process et pour 
  * créer les nouveaux processus.
  */
