@@ -35,6 +35,7 @@
 #include "include/socket.h"
 #include "include/process_management.h"
 #include "include/server_const.h"
+#include "include/http.h"
 
 /*
  * La fonction create_socket_stream ouvre une socket IPv4 et une socket
@@ -262,33 +263,37 @@ void process_connection(int sock)
 	int nb_read = 0;
 
 	// Affichage de l'adresse IP du serveur local.
-	fprintf(stdout, "Connexion : locale ");
+	fprintf(stdout, "Connexion : locale   ");
 	print_socket_address(sock, LOCAL, NULL);
 
 	// Affichage de l'adresse IP du client distant.
-	fprintf(stdout, "		   distante ");
+	fprintf(stdout, "\t    distante ");
 	print_socket_address(sock, DISTANT, buffer);
 
-	// Envoi d'un message au client contenant son adresse IP en écrivant
-	// sur la socket.
-	write(sock, "Votre adresse : ", 16);
-	write(sock, buffer, strlen(buffer));
+	// // Envoi d'un message au client contenant son adresse IP en écrivant
+	// // sur la socket.
+	// write(sock, "Votre adresse : ", 16);
+	// write(sock, buffer, strlen(buffer));
+
+	sendFile(sock, "helloworld.html", "./www/");
+
+
 
 	// Boucle de lecture du flux depuis la socket et d'écriture
 	// du flux sur la sortie standard.
-	while(buffer2[0] != EOF)
-	{
-		if((nb_read = read(sock, buffer2, 1)) == 0)
-			break;
+	// while(buffer2[0] != EOF)
+	// {
+	// 	if((nb_read = read(sock, buffer2, 1)) == 0)
+	// 		break;
 
-		if(nb_read < 0)
-		{
-			perror("read");
-			break;
-		}
+	// 	if(nb_read < 0)
+	// 	{
+	// 		perror("read");
+	// 		break;
+	// 	}
 
-		write(1, buffer2, 1);
-	}
+	// 	write(1, buffer2, 1);
+	// }
 
 	// Fermeture de la socket.
 	close(sock);
