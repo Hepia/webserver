@@ -25,79 +25,101 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <alloca.h>
 
 #include "include/http.h"
 
-#define HTTP_VERSION "1/1"
-#define HEADER200 "HTTP1/1 200 OK\nContent-length: "
-#define HEADER404 "HTTP/1.1 404 Not found\nContent-type: text/html"
+extern char *chemin_fichiers;
 
+void sendFile(int fdSocket, char *filename) {
 
-void sendFile(int fdSocket, char *filename, char *chemin_fichiers) {
-
-	int				filePathSize, bufHeaderSize, lengthFile, fdFile, rd;
-	int				bSize = 16;
-	char			*bufHeader, *filepath;
-	char			bufFile[bSize];
-	response_header *header = malloc(sizeof(response_header));
+	int			filePathSize, fdFile, rd;
+	int			bSize = 16;
+	char		*filepath;
+	char		bufFile[bSize];
+	strHeader	*header = calloc(1, sizeof(strHeader));
 
 	// Création du chemin complet du fichier
 	filePathSize = strlen(chemin_fichiers) + strlen(filename);
 	filepath = (char *) malloc(filePathSize);
 	snprintf(filepath, filePathSize + 1, "%s%s", chemin_fichiers, filename);
 
-	if ((header->content_length = fileInfo(filepath)) == 404) {
-		sendFile(fdSocket, "404", chemin_fichiers);
+	if (fileInfo(filepath, header) == 404) {
+	// Si le fichier n'existe pas, création du header correspondant et
+	// et envoi le fichier 404
+		filepath = FILE_404;
+		
+		if (fileInfo(filepath, header) != 200) {
+			fprintf(stderr, "File 404 not found\n");
+			exit(EXIT_FAILURE);
+		}
 	}
-	else {
+	else if (header->http_code == 403) {
+		filepath = FILE_403;
+		
+		if (fileInfo(filepath, header) != 200) {
+			fprintf(stderr, "File 403 not found\n");
+			exit(EXIT_FAILURE);
+		}
+	}
 
-		if (strcmp(filename, "404") == 0)
-			buildHeader(404, &header);
-		else
-			buildHeader(200, &header);
+	// Création du header de réponse
+	buildHeader(header);
 
-		if (write(fdSocket, header->str_header, header->str_header_length) < 0) {
+	// Envoi du header
+	if (write(fdSocket, header->str_header, header->str_header_length) < 0) {
+		perror("write");
+		exit(EXIT_FAILURE);
+	}
+
+	// Ouverture du fichier demandé
+	if ((fdFile = open(filepath, O_RDONLY)) < 0) {
+		perror("open");
+		exit(EXIT_FAILURE);
+	}
+
+	// Lecture et envoi du fichier demandé
+	do {
+		if ((rd = read(fdFile, bufFile, bSize)) < 0) {
+			perror("read");
+			exit(EXIT_FAILURE);
+		}
+
+		if ((write(fdSocket, bufFile, rd)) < 0) {
 			perror("write");
 			exit(EXIT_FAILURE);
 		}
 
+	} while (rd != 0);
 
-		fdFile = open(filepath, O_RDONLY);
-
-		do {
-
-			rd = read(fdFile, bufFile, bSize);
-			write(fdSocket, bufFile, rd);
-
-		} while (rd != 0);
-	}
-
+	// Fermeture du fichier
 	close(fdFile);
 
 }
 
-void buildHeader(int http_code, response_header *rhd) {
+void buildHeader(strHeader *header) {
+
+	strHeader *rhd = header;
 
 	rhd->server_info	= "Webserver/0.2 - Felipe Paul Martins & Joachim Schmidt";
-	//	rhd->date			= time
-
 	rhd->http_version	= HTTP_VERSION;
-	rhd->http_code		= http_code;
+	// rhd->date		= time
 
 	rhd->content_mime	= "text/html";
 	
-	if		(http_code == 200)	rhd->http_status = "OK";
-	else if	(http_code == 404)	rhd->http_status = "Not found";
+	if		(rhd->http_code == 200)	rhd->http_status = "OK";
+	else if	(rhd->http_code == 403)	rhd->http_status = "Not authorized";
+	else if	(rhd->http_code == 404)	rhd->http_status = "Not found";
 
-	rhd->str_header_length = snprintf(rhd->str_header, 0, "HTTP/%s %d %s\nServer: %s\nContent-Length: %d\nContent-Type: %s", rhd->http_version, rhd->http_code, rhd->http_status, rhd->server_info, rhd->content_length, rhd->content_mime);
+	char *tmp_str = alloca(255 * sizeof(char));
 
-	printf("snprintf %d\n%s", rhd->str_header_length, rhd->str_header);
+	sprintf(tmp_str, "HTTP/%s %d %s\nServer: %s\nContent-Length: %d\nContent-Type: %s\n\n", rhd->http_version, rhd->http_code, rhd->http_status, rhd->server_info, rhd->content_length, rhd->content_mime);
 
-	rhd->str_header = malloc(rhd->str_header_length);
-	snprintf(rhd->str_header, rhd->str_header_length, "HTTP/%s %d %s\nServer: %s\nContent-Length: %d\nContent-Type: %s", rhd->http_version, rhd->http_code, rhd->http_status, rhd->server_info, rhd->content_length, rhd->content_mime);
 
-	printf("Size: %d, header:\n%s\n", rhd->str_header_length, rhd->str_header);
-	return rhd;
+	rhd->str_header_length = strlen(tmp_str);
+
+	rhd->str_header = calloc(rhd->str_header_length + 1, sizeof(char));
+	strcpy(rhd->str_header, tmp_str);
 }
 
 
@@ -106,13 +128,15 @@ void buildHeader(int http_code, response_header *rhd) {
  * en paramètre. Aussi elle permet de tester si ce fichier existe, et dans un 
  * second temps permettra de vérifier les droits d'accès au fichier.
  */
-int fileInfo(char *filepath) {
+int fileInfo(char *filepath, strHeader *header) {
 
 	struct	stat fileStat;
+	header->content_length = 0;
 
 	if(stat(filepath,&fileStat) < 0) {
 
 		fprintf(stderr, "file %s not found\n", filepath);
+		header->http_code = 404;
 		return 404;
 	}
 	else {
@@ -129,7 +153,9 @@ int fileInfo(char *filepath) {
 		 * return 403;
 		 */
 
-		return fileStat.st_size;
+		header->content_length = fileStat.st_size;
+		header->http_code = 200;
+		return 200;
 	}
 }
 

@@ -257,6 +257,7 @@ int close_tcp_server(void)
 
 void process_connection(int sock)
 {
+
 	char buffer[TAILLE_READ_BUFFER];
 	char buffer2[2] = {0, 0};
 
@@ -275,8 +276,9 @@ void process_connection(int sock)
 	// write(sock, "Votre adresse : ", 16);
 	// write(sock, buffer, strlen(buffer));
 
-	sendFile(sock, "helloworld.html", "./www/");
+	sendFile(sock, "index.html");
 
+	
 
 
 	// Boucle de lecture du flux depuis la socket et d'écriture

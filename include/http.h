@@ -21,8 +21,12 @@
 #ifndef _HTTP_H_
 #define _HTTP_H_
 
-typedef struct response_header response_header;
-struct response_header 
+#define HTTP_VERSION "1.1"
+#define FILE_403 "./www/403"
+#define FILE_404 "./www/404"
+
+typedef struct strHeader strHeader;
+struct strHeader 
 {
 	char	*http_version;
 	char	*http_status;
@@ -30,7 +34,7 @@ struct response_header
 	char	*server_info;
 	char	*date;
 	int		content_length;
-	int		content_mime;
+	char	*content_mime;
 	char	*str_header;
 	int		str_header_length;
 };
@@ -40,9 +44,9 @@ struct response_header
  * Prototypes des fonctions de gestion des options.
  */
 
-void	sendFile		(int fdSocket, char *filepath, char *chemin_fichiers);
-int		fileInfo		(char *filepath);
-void 	buildHeader		(int http_code, response_header *rhd);
+void	sendFile		(int fdSocket, char *filepath);
+int		fileInfo		(char *filepath, strHeader *header);
+void 	buildHeader		(strHeader *header);
 
 
 #endif
