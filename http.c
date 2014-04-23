@@ -28,8 +28,45 @@
 #include <alloca.h>
 
 #include "include/http.h"
+#include "include/server_const.h"
 
 extern char *chemin_fichiers;
+
+void readRequestHeader(int fdSocket) {
+
+	char *bHeaderTmp = calloc(TAILLE_REQUETE_MAX, sizeof(char));
+	char *bHeader, *btmp;
+	char *endHeader = NULL;
+	int nb;
+	int nb_read = 0;
+
+	do
+	{
+		btmp = calloc(TAILLE_READ_BUFFER, sizeof(char));
+		if ((nb = read(fdSocket, btmp,TAILLE_READ_BUFFER)) < 0) {
+			perror("read");
+			exit(EXIT_FAILURE);
+		}
+
+		if (nb_read >= TAILLE_REQUETE_MAX)
+			break;
+			// TODO
+			// respond error 413 Request Entity Too Large
+			// http://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html#sec6.1
+
+
+		strcat(bHeaderTmp, btmp);
+		endHeader = strstr(bHeaderTmp, CRLF CRLF);
+		free(btmp);
+
+	} while (endHeader == NULL);
+	
+	bHeader = calloc(strlen(bHeaderTmp), sizeof(char));
+	strcpy(bHeader, bHeaderTmp);
+	
+	free(bHeaderTmp);
+
+}
 
 void sendFile(int fdSocket, char *filename) {
 
@@ -101,23 +138,23 @@ void buildHeader(strHeader *header) {
 
 	strHeader *rhd = header;
 
-	rhd->server_info	= "Webserver/0.2 - Felipe Paul Martins & Joachim Schmidt";
+	rhd->server_info	= SERVER_INFO;
 	rhd->http_version	= HTTP_VERSION;
 	// rhd->date		= time
 
+	// TODO Mime dynamique
 	rhd->content_mime	= "text/html";
-	
+
+	// Status
 	if		(rhd->http_code == 200)	rhd->http_status = "OK";
-	else if	(rhd->http_code == 403)	rhd->http_status = "Not authorized";
+	else if	(rhd->http_code == 403)	rhd->http_status = "Forbidden";
 	else if	(rhd->http_code == 404)	rhd->http_status = "Not found";
 
-	char *tmp_str = alloca(255 * sizeof(char));
-
+	// Création du header sous forme d'une chaîne
+	char *tmp_str = alloca(TAILLE_READ_BUFFER * sizeof(char));
 	sprintf(tmp_str, "HTTP/%s %d %s\nServer: %s\nContent-Length: %d\nContent-Type: %s\n\n", rhd->http_version, rhd->http_code, rhd->http_status, rhd->server_info, rhd->content_length, rhd->content_mime);
 
-
 	rhd->str_header_length = strlen(tmp_str);
-
 	rhd->str_header = calloc(rhd->str_header_length + 1, sizeof(char));
 	strcpy(rhd->str_header, tmp_str);
 }

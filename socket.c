@@ -163,7 +163,7 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 		// On force la socket AF_INET6 a binder uniquement sur l'adresse IPv6
 		// de la machine.
 		if(rp->ai_family == AF_INET6)
-			setsockopt(sock[i], SOL_SOCKET, IPV6_V6ONLY, &yes, sizeof(int));
+			setsockopt(sock[i], 41, IPV6_V6ONLY, &yes, sizeof(int));
 
 		do
 		{
@@ -253,15 +253,14 @@ int close_tcp_server(void)
  * l'adresse IP du client distant. Elle envoie également un message au client
  * contenant sa propre adresse IP. Pour finir, elle lit le flux envoyé sur la
  * socket par le client.
+ *
+ * Post interressant: http://stackoverflow.com/a/17850812
  */
 
 void process_connection(int sock)
 {
 
 	char buffer[TAILLE_READ_BUFFER];
-	// char buffer2[2] = {0, 0};
-
-	// int nb_read = 0;
 
 	// Affichage de l'adresse IP du serveur local.
 	fprintf(stdout, "Connexion : locale   ");
@@ -271,31 +270,8 @@ void process_connection(int sock)
 	fprintf(stdout, "\t    distante ");
 	print_socket_address(sock, DISTANT, buffer);
 
-	// // Envoi d'un message au client contenant son adresse IP en écrivant
-	// // sur la socket.
-	// write(sock, "Votre adresse : ", 16);
-	// write(sock, buffer, strlen(buffer));
-
+	readRequestHeader(sock);
 	sendFile(sock, "index.html");
-
-	
-
-
-	// Boucle de lecture du flux depuis la socket et d'écriture
-	// du flux sur la sortie standard.
-	// while(buffer2[0] != EOF)
-	// {
-	// 	if((nb_read = read(sock, buffer2, 1)) == 0)
-	// 		break;
-
-	// 	if(nb_read < 0)
-	// 	{
-	// 		perror("read");
-	// 		break;
-	// 	}
-
-	// 	write(1, buffer2, 1);
-	// }
 
 	// Fermeture de la socket.
 	close(sock);

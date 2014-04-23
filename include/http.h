@@ -21,32 +21,31 @@
 #ifndef _HTTP_H_
 #define _HTTP_H_
 
-#define HTTP_VERSION "1.1"
 #define FILE_403 "./www/403"
 #define FILE_404 "./www/404"
+#define CRLF "\r\n"
 
 typedef struct strHeader strHeader;
 struct strHeader 
 {
-	char	*http_version;
-	char	*http_status;
-	int		http_code;
-	char	*server_info;
-	char	*date;
-	int		content_length;
-	char	*content_mime;
-	char	*str_header;
-	int		str_header_length;
+    char    *http_version;
+    char    *http_status;
+    int     http_code;
+    char    *server_info;
+    char    *date;
+    int     content_length;
+    char    *content_mime;
+    char    *str_header;
+    int     str_header_length;
 };
 
 
  /*
  * Prototypes des fonctions de gestion des options.
  */
-
-void	sendFile		(int fdSocket, char *filepath);
-int		fileInfo		(char *filepath, strHeader *header);
-void 	buildHeader		(strHeader *header);
-
+void    readRequestHeader (int fdSocket);
+void    sendFile          (int fdSocket, char *filepath);
+int     fileInfo          (char *filepath, strHeader *header);
+void    buildHeader       (strHeader *header);
 
 #endif
