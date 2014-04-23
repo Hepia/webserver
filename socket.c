@@ -163,7 +163,7 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 		// On force la socket AF_INET6 a binder uniquement sur l'adresse IPv6
 		// de la machine.
 		if(rp->ai_family == AF_INET6)
-			setsockopt(sock[i], 41, IPV6_V6ONLY, &yes, sizeof(int));
+			setsockopt(sock[i], SOL_IPV6, IPV6_V6ONLY, &yes, sizeof(int));
 
 		do
 		{
