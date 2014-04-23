@@ -163,7 +163,7 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 		// On force la socket AF_INET6 a binder uniquement sur l'adresse IPv6
 		// de la machine.
 		if(rp->ai_family == AF_INET6)
-			setsockopt(sock[i], SOL_IPV6, IPV6_V6ONLY, &yes, sizeof(int));
+			setsockopt(sock[i], SOL_SOCKET, IPV6_V6ONLY, &yes, sizeof(int));
 
 		do
 		{
@@ -259,9 +259,9 @@ void process_connection(int sock)
 {
 
 	char buffer[TAILLE_READ_BUFFER];
-	char buffer2[2] = {0, 0};
+	// char buffer2[2] = {0, 0};
 
-	int nb_read = 0;
+	// int nb_read = 0;
 
 	// Affichage de l'adresse IP du serveur local.
 	fprintf(stdout, "Connexion : locale   ");
