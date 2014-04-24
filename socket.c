@@ -270,8 +270,8 @@ void process_connection(int sock)
 	fprintf(stdout, "\t    distante ");
 	print_socket_address(sock, DISTANT, buffer);
 
-	readRequestHeader(sock);
-	sendFile(sock, "index.html");
+	// Traite la requête HTTP
+	processHttp(sock);
 
 	// Fermeture de la socket.
 	close(sock);

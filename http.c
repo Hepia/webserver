@@ -32,18 +32,37 @@
 
 extern char *chemin_fichiers;
 
-void readRequestHeader(int fdSocket) {
+/**
+ * 
+ */
+void processHttp(int sockfd) {
 
-	char *bHeaderTmp = calloc(TAILLE_REQUETE_MAX, sizeof(char));
+	char *requestHeader, *filepath;
+	requestHeader = readRequestHeader(sockfd);
+
+	filepath = parseHeader(requestHeader);
+
+	sendFile(sockfd, filepath);
+}
+
+/**
+ * La fonction readRequestHeader lit les premiers octets reçu par le client afin
+ * d'extraire l'en-tête de la requête, qui est retournée lors de la sortie de la fonction.
+ */
+char* readRequestHeader(int sockfd) {
+
+	char *bHeaderTmp = alloca(TAILLE_REQUETE_MAX * sizeof(char));
 	char *bHeader, *btmp;
 	char *endHeader = NULL;
 	int nb;
 	int nb_read = 0;
 
+	// Lecture du flux entrant pour récupérer le header de la requête
 	do
 	{
-		btmp = calloc(TAILLE_READ_BUFFER, sizeof(char));
-		if ((nb = read(fdSocket, btmp,TAILLE_READ_BUFFER)) < 0) {
+		btmp = (char *) calloc(TAILLE_READ_BUFFER, sizeof(char));
+
+		if ((nb = read(sockfd, btmp,TAILLE_READ_BUFFER)) < 0) {
 			perror("read");
 			exit(EXIT_FAILURE);
 		}
@@ -54,38 +73,64 @@ void readRequestHeader(int fdSocket) {
 			// respond error 413 Request Entity Too Large
 			// http://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html#sec6.1
 
-
 		strcat(bHeaderTmp, btmp);
 		endHeader = strstr(bHeaderTmp, CRLF CRLF);
 		free(btmp);
 
 	} while (endHeader == NULL);
 	
-	bHeader = calloc(strlen(bHeaderTmp), sizeof(char));
+	bHeader = alloca(strlen(bHeaderTmp) * sizeof(char));
 	strcpy(bHeader, bHeaderTmp);
-	
-	free(bHeaderTmp);
 
+	return bHeader;
 }
 
-void sendFile(int fdSocket, char *filename) {
+/**
+ * La fonction parseHeader analyse l'en-tête de la requete reçu en paramètre
+ * et effectue l'extraction du nom du fichier demandé qui est retourné à la sortie
+ */
+char* parseHeader(char *header) {
 
-	int			filePathSize, fdFile, rd;
-	int			bSize = 16;
-	char		*filepath;
-	char		bufFile[bSize];
-	strHeader	*header = calloc(1, sizeof(strHeader));
+	int		filepathSize;
+	char	*filepath, *filename, *method, *requestUri;
+
+	// Récupération des substring Méthode et URL de requete du header
+	method = strtok(header, " ");
+	requestUri = strtok(NULL, " ");
+
+	// Si l'URL est la racine "/" il faut spécifier le fichier index par défaut
+	// Sinon récupérer le URL du fichier sans le premier "/"
+	if (strcmp(requestUri, "/") == 0)
+		filename = FILE_INDEX;
+	else {
+		filename = (char *) alloca(strlen(requestUri)-1);
+		strcpy(filename, requestUri+1);
+	}
 
 	// Création du chemin complet du fichier
-	filePathSize = strlen(chemin_fichiers) + strlen(filename);
-	filepath = (char *) malloc(filePathSize);
-	snprintf(filepath, filePathSize + 1, "%s%s", chemin_fichiers, filename);
+	filepathSize = strlen(chemin_fichiers) + strlen(filename);
+	filepath = (char *) calloc(filepathSize, sizeof(char));
+	sprintf(filepath, "%s%s", chemin_fichiers, filename);
+
+	return filepath;
+}
+
+/**
+ * La fonction sendFile vérifie l'existance du fichier et envoi se dernier au client via la socket ouverte.
+ * Si le fichier n'existe pas, l'erreur 404 est envoyée.
+ */
+void sendFile(int sockfd, char *filepath) {
+
+	int			fdFile, rd;
+	char		bufFile[TAILLE_READ_BUFFER];
+	strHeader	*header = (strHeader *) alloca(sizeof(strHeader));
 
 	if (fileInfo(filepath, header) == 404) {
 	// Si le fichier n'existe pas, création du header correspondant et
 	// et envoi le fichier 404
+
 		filepath = FILE_404;
-		
+
 		if (fileInfo(filepath, header) != 200) {
 			fprintf(stderr, "File 404 not found\n");
 			exit(EXIT_FAILURE);
@@ -104,7 +149,7 @@ void sendFile(int fdSocket, char *filename) {
 	buildHeader(header);
 
 	// Envoi du header
-	if (write(fdSocket, header->str_header, header->str_header_length) < 0) {
+	if (write(sockfd, header->str_header, header->str_header_length) < 0) {
 		perror("write");
 		exit(EXIT_FAILURE);
 	}
@@ -117,23 +162,25 @@ void sendFile(int fdSocket, char *filename) {
 
 	// Lecture et envoi du fichier demandé
 	do {
-		if ((rd = read(fdFile, bufFile, bSize)) < 0) {
+		if ((rd = read(fdFile, bufFile, TAILLE_READ_BUFFER)) < 0) {
 			perror("read");
 			exit(EXIT_FAILURE);
 		}
 
-		if ((write(fdSocket, bufFile, rd)) < 0) {
+		if ((write(sockfd, bufFile, rd)) < 0) {
 			perror("write");
 			exit(EXIT_FAILURE);
 		}
-
 	} while (rd != 0);
 
-	// Fermeture du fichier
+	// Fermeture du descripteur du fichier
 	close(fdFile);
-
 }
 
+/**
+ * Récupération des informations nécessaires et création de l'en-tête
+ * pour la réponse du serveur.
+ */
 void buildHeader(strHeader *header) {
 
 	strHeader *rhd = header;
@@ -152,18 +199,20 @@ void buildHeader(strHeader *header) {
 
 	// Création du header sous forme d'une chaîne
 	char *tmp_str = alloca(TAILLE_READ_BUFFER * sizeof(char));
-	sprintf(tmp_str, "HTTP/%s %d %s\nServer: %s\nContent-Length: %d\nContent-Type: %s\n\n", rhd->http_version, rhd->http_code, rhd->http_status, rhd->server_info, rhd->content_length, rhd->content_mime);
+	sprintf(tmp_str, "HTTP/%s %d %s\nServer: %s\nContent-Length: %d\nContent-Type: %s\n\n", 
+		rhd->http_version, rhd->http_code, rhd->http_status, 
+		rhd->server_info, rhd->content_length, rhd->content_mime);
 
 	rhd->str_header_length = strlen(tmp_str);
-	rhd->str_header = calloc(rhd->str_header_length + 1, sizeof(char));
+	rhd->str_header = (char *) calloc(rhd->str_header_length + 1, sizeof(char));
 	strcpy(rhd->str_header, tmp_str);
 }
 
 
 /**
- * La fonction fileInfo returne la taille, en octets, du fichier qui est passé
- * en paramètre. Aussi elle permet de tester si ce fichier existe, et dans un 
- * second temps permettra de vérifier les droits d'accès au fichier.
+ * La fonction fileInfo returne le code HTTP selon la disponnibilité ou non
+ * du fichier demandé en paramètre. Aussi elle permet de tester si ce fichier existe, 
+ * et dans un second temps permettra de vérifier les droits d'accès au fichier.
  */
 int fileInfo(char *filepath, strHeader *header) {
 

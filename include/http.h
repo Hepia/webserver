@@ -21,6 +21,7 @@
 #ifndef _HTTP_H_
 #define _HTTP_H_
 
+#define FILE_INDEX "index.html"
 #define FILE_403 "./www/403"
 #define FILE_404 "./www/404"
 #define CRLF "\r\n"
@@ -43,9 +44,11 @@ struct strHeader
  /*
  * Prototypes des fonctions de gestion des options.
  */
-void    readRequestHeader (int fdSocket);
-void    sendFile          (int fdSocket, char *filepath);
-int     fileInfo          (char *filepath, strHeader *header);
-void    buildHeader       (strHeader *header);
+void  processHttp       (int sockfd);
+char* readRequestHeader (int fdSocket);
+char* parseHeader       (char *header);
+void  sendFile          (int fdSocket, char *filepath);
+int   fileInfo          (char *filepath, strHeader *header);
+void  buildHeader       (strHeader *header);
 
 #endif
