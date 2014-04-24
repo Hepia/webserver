@@ -260,7 +260,7 @@ int close_tcp_server(void)
 void process_connection(int sock)
 {
 
-	char buffer[TAILLE_READ_BUFFER];
+	char q_ipcli[TAILLE_READ_BUFFER];
 
 	// Affichage de l'adresse IP du serveur local.
 	fprintf(stdout, "Connexion : locale   ");
@@ -268,10 +268,10 @@ void process_connection(int sock)
 
 	// Affichage de l'adresse IP du client distant.
 	fprintf(stdout, "\t    distante ");
-	print_socket_address(sock, DISTANT, buffer);
+	print_socket_address(sock, DISTANT, q_ipcli);
 
 	// Traite la requête HTTP
-	processHttp(sock);
+	processHttp(sock, q_ipcli);
 
 	// Fermeture de la socket.
 	close(sock);
@@ -279,7 +279,7 @@ void process_connection(int sock)
 
 /*
  * La fonction print_socket_address affiche l'adresse IPv4 ou IPv6 du serveur local ou
- * l'adresse IPvç ou IPv6 du client distant. Cette adresse peut être copié dans un buffer
+ * l'adresse IPv4 ou IPv6 du client distant. Cette adresse peut être copié dans un buffer
  * externe à la fonction.
  */
 
@@ -368,7 +368,7 @@ int print_socket_address(int sock, int where, char *ext_buffer)
 	// Copie du buffer dans un buffer externe à la fonction.
 	if(ext_buffer != NULL)
 	{
-		strcpy(ext_buffer, bufferp);
+		strcpy(ext_buffer, buffer);
 		strcat(ext_buffer, "\n");
 	}
 

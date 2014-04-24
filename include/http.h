@@ -26,29 +26,45 @@
 #define FILE_404 "./www/404"
 #define CRLF "\r\n"
 
-typedef struct strHeader strHeader;
-struct strHeader 
+typedef struct stuHttpData stuHttpData;
+struct stuHttpData 
 {
-    char    *http_version;
-    char    *http_status;
-    int     http_code;
-    char    *server_info;
-    char    *date;
-    int     content_length;
-    char    *content_mime;
-    char    *str_header;
-    int     str_header_length;
+    int  socketfd;
+    char *q_ipcli;
+    char *q_method;
+    char *q_host;
+    char *q_filepath;
+    char *q_header;			// En-tête de la requête HTTP
+    char *r_status;
+    char *r_date;
+    char *r_content_mime;
+    char *r_header;				// En-tête HTTP de réponse
+    int  r_code;
+    int  r_content_length;
+    int  r_header_size;
 };
+
+typedef struct elem_hist elem_hist;
+struct elem_hist
+{
+	char      *q_url;
+	char      *q_ipcli;
+	char      *q_date;
+	int       q_stateerr;
+	elem_hist *q_next;
+};
+
+void* create_new_elem_hist(char *url, char *ipcli, char *date, int staterr);
 
 
  /*
  * Prototypes des fonctions de gestion des options.
  */
-void  processHttp       (int sockfd);
-char* readRequestHeader (int fdSocket);
-char* parseHeader       (char *header);
-void  sendFile          (int fdSocket, char *filepath);
-int   fileInfo          (char *filepath, strHeader *header);
-void  buildHeader       (strHeader *header);
+void* processHttp       (int sockfd, char *qIpCli);
+void* readQueryHeader   (stuHttpData *httpData);
+void* parseHeader       (stuHttpData *httpData);
+void* buildHeader       (stuHttpData *httpData);
+void* sendFile          (stuHttpData *httpData);
+int   fileInfo          (stuHttpData *httpData);
 
 #endif

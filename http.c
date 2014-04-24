@@ -32,30 +32,68 @@
 
 extern char *chemin_fichiers;
 
-/**
- * 
- */
-void processHttp(int sockfd) {
-
-	char *requestHeader, *filepath;
-	requestHeader = readRequestHeader(sockfd);
-
-	filepath = parseHeader(requestHeader);
-
-	sendFile(sockfd, filepath);
-
-	// Libération de mémoire
-	free(filepath);
+void* create_new_elem_hist(char *url, char *ipcli, char *date, int staterr) {
+	printf("LOG: <%s>, <%s>, <%s>, <%d>\n", url, ipcli, date, staterr);
+	// TODO
+	return 0;
 }
 
 /**
- * La fonction readRequestHeader lit les premiers octets reçu par le client afin
+ * 
+ */
+void* processHttp(int sockfd, char *ipcli) {
+
+	int			rHttpCode;
+	elem_hist	*elemHist = NULL;
+	stuHttpData	*httpData = (stuHttpData *) alloca(sizeof(stuHttpData));
+
+	httpData->socketfd = sockfd;
+	httpData->q_ipcli  = ipcli;
+
+	readQueryHeader(httpData);
+	parseHeader(httpData);
+
+	printf("URI%s\n", httpData->q_filepath);
+
+	if ((rHttpCode = fileInfo(httpData)) == 404) {
+	// Si le fichier n'existe pas, création du header correspondant et
+	// et envoi le fichier 404
+
+		httpData->q_filepath = FILE_404;
+
+		if (fileInfo(httpData) != 200) {
+			fprintf(stderr, "File 404 not found\n");
+			exit(EXIT_FAILURE);
+		}
+	}
+	else if (rHttpCode == 403) {
+		httpData->q_filepath = FILE_403;
+		
+		if (fileInfo(httpData) != 200) {
+			fprintf(stderr, "File 403 not found\n");
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	// Création du header de réponse
+	buildHeader(httpData);
+
+	char *fullUri = (char *) alloca(strlen(httpData->q_host) + strlen(httpData->q_filepath) * sizeof(char));
+	elemHist = (elem_hist *) create_new_elem_hist(fullUri, httpData->q_ipcli, "DATE", rHttpCode);
+
+	sendFile(httpData);
+
+	return 0;
+}
+
+/**
+ * La fonction readQueryHeader lit les premiers octets reçu par le client afin
  * d'extraire l'en-tête de la requête, qui est retournée lors de la sortie de la fonction.
  */
-char* readRequestHeader(int sockfd) {
+void* readQueryHeader(stuHttpData *httpData) {
 
-	char *bHeaderTmp = alloca(TAILLE_REQUETE_MAX * sizeof(char));
-	char *bHeader, *btmp;
+	char *bHeaderTmp = (char *) alloca(TAILLE_REQUETE_MAX * sizeof(char));
+	char *btmp;
 	char *endHeader = NULL;
 	int nb;
 	int nb_read = 0;
@@ -65,7 +103,7 @@ char* readRequestHeader(int sockfd) {
 	{
 		btmp = (char *) calloc(TAILLE_READ_BUFFER, sizeof(char));
 
-		if ((nb = read(sockfd, btmp,TAILLE_READ_BUFFER)) < 0) {
+		if ((nb = read(httpData->socketfd, btmp,TAILLE_READ_BUFFER)) < 0) {
 			perror("read");
 			exit(EXIT_FAILURE);
 		}
@@ -81,33 +119,45 @@ char* readRequestHeader(int sockfd) {
 		free(btmp);
 
 	} while (endHeader == NULL);
-	
-	bHeader = alloca(strlen(bHeaderTmp) * sizeof(char));
-	strcpy(bHeader, bHeaderTmp);
 
-	return bHeader;
+	httpData->q_header = calloc(strlen(bHeaderTmp), sizeof(char));
+	strcpy(httpData->q_header, bHeaderTmp);
+
+	return 0;
 }
 
 /**
  * La fonction parseHeader analyse l'en-tête de la requete reçu en paramètre
  * et effectue l'extraction du nom du fichier demandé qui est retourné à la sortie
  */
-char* parseHeader(char *header) {
+void* parseHeader(stuHttpData *httpData) {
 
-	int		filepathSize;
-	char	*filepath, *filename, *method, *requestUri;
+	int  filepathSize;
+	int  rKeepAlive = 0;
+	char *filepath, *filename, *token;
+	char *rMethod 	= (char *)alloca(16 * sizeof(char));
+	char *rUri 		= (char *)alloca(TAILLE_READ_BUFFER * sizeof(char));
+	char *rHost 	= (char *)alloca(TAILLE_READ_BUFFER * sizeof(char));
 
-	// Récupération des substring Méthode et URL de requete du header
-	method = strtok(header, " ");
-	requestUri = strtok(NULL, " ");
+	sscanf(httpData->q_header, "%s %s", rMethod, rUri);
+
+	// Extraction des éléments nécessaire dans l'en-tête
+	token = strstr(httpData->q_header, "Host:");
+	sscanf(token, "%*s %s", rHost);
+
+	if (strstr(httpData->q_header, "Connection: keep-alive") != NULL) {
+		rKeepAlive = 1;
+	}
+
+	printf("Method:%s\n", rMethod);
 
 	// Si l'URL est la racine "/" il faut spécifier le fichier index par défaut
 	// Sinon récupérer le URL du fichier sans le premier "/"
-	if (strcmp(requestUri, "/") == 0)
+	if (strcmp(rUri, "/") == 0)
 		filename = FILE_INDEX;
 	else {
-		filename = (char *) alloca(strlen(requestUri)-1);
-		strcpy(filename, requestUri+1);
+		filename = (char *) alloca(strlen(rUri)-1);
+		strcpy(filename, rUri+1);
 	}
 
 	// Création du chemin complet du fichier
@@ -115,50 +165,26 @@ char* parseHeader(char *header) {
 	filepath = (char *) calloc(filepathSize, sizeof(char));
 	sprintf(filepath, "%s%s", chemin_fichiers, filename);
 
-	return filepath;
+	return 0;
 }
 
 /**
  * La fonction sendFile vérifie l'existance du fichier et envoi se dernier au client via la socket ouverte.
  * Si le fichier n'existe pas, l'erreur 404 est envoyée.
  */
-void sendFile(int sockfd, char *filepath) {
+void* sendFile(stuHttpData *httpData) {
 
-	int			fdFile, rd;
-	char		bufFile[TAILLE_READ_BUFFER];
-	strHeader	*header = (strHeader *) alloca(sizeof(strHeader));
-
-	if (fileInfo(filepath, header) == 404) {
-	// Si le fichier n'existe pas, création du header correspondant et
-	// et envoi le fichier 404
-
-		filepath = FILE_404;
-
-		if (fileInfo(filepath, header) != 200) {
-			fprintf(stderr, "File 404 not found\n");
-			exit(EXIT_FAILURE);
-		}
-	}
-	else if (header->http_code == 403) {
-		filepath = FILE_403;
-		
-		if (fileInfo(filepath, header) != 200) {
-			fprintf(stderr, "File 403 not found\n");
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	// Création du header de réponse
-	buildHeader(header);
+	int  fdFile, rd;
+	char bufFile[TAILLE_READ_BUFFER];
 
 	// Envoi du header
-	if (write(sockfd, header->str_header, header->str_header_length) < 0) {
+	if (write(httpData->socketfd, httpData->r_header, httpData->r_header_size) < 0) {
 		perror("write");
 		exit(EXIT_FAILURE);
 	}
 
 	// Ouverture du fichier demandé
-	if ((fdFile = open(filepath, O_RDONLY)) < 0) {
+	if ((fdFile = open(httpData->q_filepath, O_RDONLY)) < 0) {
 		perror("open");
 		exit(EXIT_FAILURE);
 	}
@@ -170,49 +196,45 @@ void sendFile(int sockfd, char *filepath) {
 			exit(EXIT_FAILURE);
 		}
 
-		if ((write(sockfd, bufFile, rd)) < 0) {
+		if ((write(httpData->socketfd, bufFile, rd)) < 0) {
 			perror("write");
 			exit(EXIT_FAILURE);
 		}
 	} while (rd != 0);
 
 	// Fermeture du descripteur du fichier
-	// Et libération de mémoire
 	close(fdFile);
-	free(header->str_header);
+
+	return 0;
 }
 
 /**
  * Récupération des informations nécessaires et création de l'en-tête
  * pour la réponse du serveur.
  */
-void buildHeader(strHeader *header) {
+void* buildHeader(stuHttpData *httpData) {
 
-	strHeader *rhd = header;
-
-	rhd->server_info	= SERVER_INFO;
-	rhd->http_version	= HTTP_VERSION;
-	// rhd->date		= time
-
+	// TODO Date
+	//httpData->r_date = Date
 	// TODO Mime dynamique
-	rhd->content_mime	= "text/html";
+	httpData->r_content_mime	= "text/html";
 
 	// Status
-	if		(rhd->http_code == 200)	rhd->http_status = "OK";
-	else if	(rhd->http_code == 403)	rhd->http_status = "Forbidden";
-	else if	(rhd->http_code == 404)	rhd->http_status = "Not found";
+	if		(httpData->r_code == 200)	httpData->r_status = "OK";
+	else if	(httpData->r_code == 403)	httpData->r_status = "Forbidden";
+	else if	(httpData->r_code == 404)	httpData->r_status = "Not found";
 
 	// Création du header sous forme d'une chaîne
-	char *tmp_str = alloca(TAILLE_READ_BUFFER * sizeof(char));
+	char *tmp_str = (char *) alloca(TAILLE_READ_BUFFER * sizeof(char));
 	sprintf(tmp_str, "HTTP/%s %d %s\nServer: %s\nContent-Length: %d\nContent-Type: %s\n\n", 
-		rhd->http_version, rhd->http_code, rhd->http_status, 
-		rhd->server_info, rhd->content_length, rhd->content_mime);
+		HTTP_VERSION, httpData->r_code, httpData->r_status, 
+		SERVER_INFO, httpData->r_content_length, httpData->r_content_mime);
 
-	rhd->str_header_length = strlen(tmp_str);
-	rhd->str_header = (char *) calloc(rhd->str_header_length + 1, sizeof(char));
-	strcpy(rhd->str_header, tmp_str);
+	httpData->r_header_size = strlen(tmp_str);
+	httpData->r_header = (char *) calloc(httpData->r_header_size + 1, sizeof(char));
+	strcpy(httpData->r_header, tmp_str);
 
-	free(tmp_str);
+	return 0;
 }
 
 
@@ -221,15 +243,15 @@ void buildHeader(strHeader *header) {
  * du fichier demandé en paramètre. Aussi elle permet de tester si ce fichier existe, 
  * et dans un second temps permettra de vérifier les droits d'accès au fichier.
  */
-int fileInfo(char *filepath, strHeader *header) {
+int fileInfo(stuHttpData *httpData) {
 
 	struct	stat fileStat;
-	header->content_length = 0;
+	httpData->r_content_length = 0;
 
-	if(stat(filepath,&fileStat) < 0) {
+	if(stat(httpData->q_filepath,&fileStat) < 0) {
 
-		fprintf(stderr, "file %s not found\n", filepath);
-		header->http_code = 404;
+		fprintf(stderr, "file %s not found\n", httpData->q_filepath);
+		httpData->r_code = 404;
 		return 404;
 	}
 	else {
@@ -246,9 +268,8 @@ int fileInfo(char *filepath, strHeader *header) {
 		 * return 403;
 		 */
 
-		header->content_length = fileStat.st_size;
-		header->http_code = 200;
+		httpData->r_content_length = fileStat.st_size;
+		httpData->r_code = 200;
 		return 200;
 	}
 }
-

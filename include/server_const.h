@@ -35,7 +35,7 @@
 
 #define PORT_SERVEUR_DEFAUT   "4321"
 #define TAILLE_FICHIER_LOG    1024
-#define CHEMIN_FICHIERS_HTML  "./"
+#define CHEMIN_FICHIERS_HTML  "./www/"
 #define MAX_CONNEXION_CLIENTS 10
 
 /*
