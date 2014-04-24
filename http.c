@@ -43,6 +43,9 @@ void processHttp(int sockfd) {
 	filepath = parseHeader(requestHeader);
 
 	sendFile(sockfd, filepath);
+
+	// Libération de mémoire
+	free(filepath);
 }
 
 /**
@@ -174,7 +177,9 @@ void sendFile(int sockfd, char *filepath) {
 	} while (rd != 0);
 
 	// Fermeture du descripteur du fichier
+	// Et libération de mémoire
 	close(fdFile);
+	free(header->str_header);
 }
 
 /**
@@ -206,6 +211,8 @@ void buildHeader(strHeader *header) {
 	rhd->str_header_length = strlen(tmp_str);
 	rhd->str_header = (char *) calloc(rhd->str_header_length + 1, sizeof(char));
 	strcpy(rhd->str_header, tmp_str);
+
+	free(tmp_str);
 }
 
 
