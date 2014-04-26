@@ -25,11 +25,6 @@
 #define SOL_IPV6 41 // From /usr/src/linux-headers-3.11.0-12-generic/include/linux/socket.h:274
 #endif
 
-// struct serv_param
-// {
-	
-// };
-
 /*
  * Prototypes des fonctions de gestion des sockets et des communications
  * réseaux.
@@ -37,7 +32,7 @@
 
 int* create_socket_stream(const char *host_name, const char *serv_port, 
                           const char *proto_name);
-int  tcp_server          (const char *port);
+int  tcp_server          (void *arg);
 int  close_tcp_server    (void);
 void process_connection  (int sock);
 int  print_socket_address(int sock, int where, char *ext_buffer);

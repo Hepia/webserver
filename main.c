@@ -43,6 +43,7 @@ void testoption(int argc, char *argv[],
                 int taille_log, int max_connexion);
 
 // Définition par défaut des variables utiles au programme.
+
 char *port_srv        = PORT_SERVEUR_DEFAUT;
 char *chemin_fichiers = CHEMIN_FICHIERS_HTML;
 int  taille_log       = TAILLE_FICHIER_LOG;
@@ -51,8 +52,15 @@ int  max_connexion    = MAX_CONNEXION_CLIENTS;
 /*
  * Point d'entrée principale du programme.
  */
+
 int main(int argc, char *argv[])
 {
+    struct serv_param param;
+
+    param.port_srv        = port_srv;
+    param.chemin_fichiers = chemin_fichiers;
+    param.taille_log      = taille_log;
+    param.max_connexion   = max_connexion;
 	
 	// Initialisation du gestionnaire de signaux.
     init_handler(list_action);
@@ -65,7 +73,7 @@ int main(int argc, char *argv[])
                taille_log, max_connexion);
 
 	// Lancement du serveur TCP/IP.
-    tcp_server(port_srv);
+    tcp_server((void *)&param);
 
     return EXIT_SUCCESS;
 }
