@@ -25,6 +25,11 @@
 #define SOL_IPV6 41 // From /usr/src/linux-headers-3.11.0-12-generic/include/linux/socket.h:274
 #endif
 
+// struct serv_param
+// {
+	
+// };
+
 /*
  * Prototypes des fonctions de gestion des sockets et des communications
  * réseaux.

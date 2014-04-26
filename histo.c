@@ -21,6 +21,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <assert.h>
 
 #include "include/histo.h"
 #include "include/local_time.h"
@@ -112,10 +114,10 @@ void * new_queue(long (*get_size_queue)(void *),
 	return (void *)queue;
 }
 
-void delete_queue(void *q_this)
-{
+// void delete_queue(void *q_this)
+// {
 
-}
+// }
 
 long get_size_queue(void *q_this)
 {
@@ -300,7 +302,7 @@ void print_elem(void *q_elem)
 	struct elem_hist *e = (struct elem_hist *)q_elem;
 
 	fprintf(stdout, "+++++\nadr : %p\n+++++\nurl : %s\nipcli : %s\ndate : %s\nstaterr : %d\nq_next : %p\n+++++\n", 
-			e, e->q_url, e->q_ipcli, e->q_date, e->q_staterr, e->q_next);
+			(void *)e, e->q_url, e->q_ipcli, e->q_date, e->q_staterr, (void *)(e->q_next));
 }
 
 int rand_x_y(int x, int y)
@@ -337,57 +339,57 @@ int get_file_name(char **buffer)
 	return (size + 4);
 }
 
-int main(void)
-{
-	struct queue_hist *queue = NULL;
+// int main(void)
+// {
+// 	struct queue_hist *queue = NULL;
 
-	struct elem_hist *e1 = NULL;
-	struct elem_hist *e2 = NULL;
-	struct elem_hist *e3 = NULL;
-	struct elem_hist *e4 = NULL;
-	struct elem_hist *e5 = NULL;
+// 	struct elem_hist *e1 = NULL;
+// 	struct elem_hist *e2 = NULL;
+// 	struct elem_hist *e3 = NULL;
+// 	struct elem_hist *e4 = NULL;
+// 	struct elem_hist *e5 = NULL;
 
-	queue = new_queue(get_size_queue, get_max_size_queue,
-					  push, pop,
-					  get_elem, get_nb_elem,
-					  get_size_elem, 330);
+// 	queue = new_queue(get_size_queue, get_max_size_queue,
+// 					  push, pop,
+// 					  get_elem, get_nb_elem,
+// 					  get_size_elem, 330);
 
-	e1 = create_new_elem_hist("http://localhost1/index.html", "127.0.0.1", 1);
-	e2 = create_new_elem_hist("http://localhost2", "127.0.0.2", 2);
-	e3 = create_new_elem_hist("http://localhost3/t.txt", "127.0.0.3", 3);
-	e4 = create_new_elem_hist("http://www.google.com", "192.168.0.100", 4);
-	e5 = create_new_elem_hist("http://www.hepia.ch", "192.168.0.200", 5);
+// 	e1 = create_new_elem_hist("http://localhost1/index.html", "127.0.0.1", 1);
+// 	e2 = create_new_elem_hist("http://localhost2", "127.0.0.2", 2);
+// 	e3 = create_new_elem_hist("http://localhost3/t.txt", "127.0.0.3", 3);
+// 	e4 = create_new_elem_hist("http://www.google.com", "192.168.0.100", 4);
+// 	e5 = create_new_elem_hist("http://www.hepia.ch", "192.168.0.200", 5);
 
-	fprintf(stdout, "e1 + e2 + e3 + e4 + e5= %ld\n\n\n", get_size_elem((void *)e1) + 
-														 get_size_elem((void *)e2) + 
-													 	 get_size_elem((void *)e3) +
-													 	 get_size_elem((void *)e4) +
-													 	 get_size_elem((void *)e4));
+// 	fprintf(stdout, "e1 + e2 + e3 + e4 + e5= %ld\n\n\n", get_size_elem((void *)e1) + 
+// 														 get_size_elem((void *)e2) + 
+// 													 	 get_size_elem((void *)e3) +
+// 													 	 get_size_elem((void *)e4) +
+// 													 	 get_size_elem((void *)e4));
 
-	queue->push((void *)queue, (void *)e1);
-	queue->push((void *)queue, (void *)e2);
-	queue->push((void *)queue, (void *)e3);
-	queue->push((void *)queue, (void *)e4);
-	queue->push((void *)queue, (void *)e5);
+// 	queue->push((void *)queue, (void *)e1);
+// 	queue->push((void *)queue, (void *)e2);
+// 	queue->push((void *)queue, (void *)e3);
+// 	queue->push((void *)queue, (void *)e4);
+// 	queue->push((void *)queue, (void *)e5);
 
-	print_queue((void *)queue);
+// 	print_queue((void *)queue);
 
-	fprintf(stdout, "\n\nelem index %d\n", 2);
-	print_elem(get_elem((void *)queue, 2));
-	fprintf(stdout, "\n\n");
+// 	fprintf(stdout, "\n\nelem index %d\n", 2);
+// 	print_elem(get_elem((void *)queue, 2));
+// 	fprintf(stdout, "\n\n");
 
-	queue->pop((void *)queue);
-	queue->pop((void *)queue);
-	queue->pop((void *)queue);
-	queue->pop((void *)queue);
+// 	queue->pop((void *)queue);
+// 	queue->pop((void *)queue);
+// 	queue->pop((void *)queue);
+// 	queue->pop((void *)queue);
 
-	queue->pop((void *)queue);
-	queue->pop((void *)queue);
-	queue->pop((void *)queue);
+// 	queue->pop((void *)queue);
+// 	queue->pop((void *)queue);
+// 	queue->pop((void *)queue);
 
-	print_queue((void *)queue);
+// 	print_queue((void *)queue);
 
-	delete_queue(queue);
+// 	delete_queue(queue);
 
-	return EXIT_SUCCESS;
-}
+// 	return EXIT_SUCCESS;
+// }

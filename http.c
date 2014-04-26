@@ -29,23 +29,25 @@
 
 #include "include/http.h"
 #include "include/server_const.h"
+#include "include/local_time.h"
+#include "include/histo.h"
 
 extern char *chemin_fichiers;
 
-void* create_new_elem_hist(char *url, char *ipcli, char *date, int staterr) {
-	printf("LOG: <%s>, <%s>, <%s>, <%d>\n", url, ipcli, date, staterr);
-	// TODO
-	return 0;
-}
+// void* create_new_elem_hist(char *url, char *ipcli, char *date, int staterr) {
+// 	printf("LOG: <%s>, <%s>, <%s>, <%d>\n", url, ipcli, date, staterr);
+// 	// TODO
+// 	return 0;
+// }
 
 /**
  * 
  */
 void* processHttp(int sockfd, char *ipcli) {
 
-	int			rHttpCode;
-	elem_hist	*elemHist = NULL;
-	stuHttpData	*httpData = (stuHttpData *) alloca(sizeof(stuHttpData));
+	int			      rHttpCode;
+	struct elem_hist *elemHist = NULL;
+	stuHttpData	     *httpData = (stuHttpData *) alloca(sizeof(stuHttpData));
 
 	httpData->socketfd = sockfd;
 	httpData->q_ipcli  = ipcli;
@@ -79,7 +81,7 @@ void* processHttp(int sockfd, char *ipcli) {
 	buildHeader(httpData);
 
 	char *fullUri = (char *) alloca(strlen(httpData->q_host) + strlen(httpData->q_filepath) * sizeof(char));
-	elemHist = (elem_hist *) create_new_elem_hist(fullUri, httpData->q_ipcli, "DATE", rHttpCode);
+	elemHist = (struct elem_hist *) create_new_elem_hist(fullUri, httpData->q_ipcli, rHttpCode);
 
 	sendFile(httpData);
 
