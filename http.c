@@ -137,9 +137,12 @@ void* parseHeader(stuHttpData *httpData) {
 	int  filepathSize;
 	int  rKeepAlive = 0;
 	char *filepath, *filename, *token;
-	char *rMethod 	= (char *)alloca(16 * sizeof(char));
-	char *rUri 		= (char *)alloca(TAILLE_READ_BUFFER * sizeof(char));
-	char *rHost 	= (char *)alloca(TAILLE_READ_BUFFER * sizeof(char));
+	//char *rMethod 	= (char *)alloca(16 * sizeof(char));
+	//char *rUri 		= (char *)alloca(TAILLE_READ_BUFFER * sizeof(char));
+	//char *rHost 	= (char *)alloca(TAILLE_READ_BUFFER * sizeof(char));
+	char *rMethod 	= calloc(16, sizeof(char));
+	char *rUri 		= calloc(TAILLE_READ_BUFFER, sizeof(char));
+	char *rHost 	= calloc(TAILLE_READ_BUFFER, sizeof(char));
 
 	sscanf(httpData->q_header, "%s %s", rMethod, rUri);
 
@@ -166,6 +169,10 @@ void* parseHeader(stuHttpData *httpData) {
 	filepathSize = strlen(chemin_fichiers) + strlen(filename);
 	filepath = (char *) calloc(filepathSize, sizeof(char));
 	sprintf(filepath, "%s%s", chemin_fichiers, filename);
+
+	free(rMethod);
+	free(rUri);
+	free(rHost);
 
 	return 0;
 }
@@ -228,9 +235,12 @@ void* buildHeader(stuHttpData *httpData) {
 
 	// Création du header sous forme d'une chaîne
 	char *tmp_str = (char *) alloca(TAILLE_READ_BUFFER * sizeof(char));
-	sprintf(tmp_str, "HTTP/%s %d %s\nServer: %s\nContent-Length: %d\nContent-Type: %s; charset=UTF-8\nAccept-Charset: ISO-8859-1\n\n", 
-		HTTP_VERSION, httpData->r_code, httpData->r_status, 
-		SERVER_INFO, httpData->r_content_length, httpData->r_content_mime);
+	sprintf(tmp_str, "HTTP/%s %d %s\n"
+					 "Server: %s\n"
+					 "Content-Length: %d\n"
+					 "Content-Type: %s\n\n", 
+					 HTTP_VERSION, httpData->r_code, httpData->r_status, 
+					 SERVER_INFO, httpData->r_content_length, httpData->r_content_mime);
 
 	httpData->r_header_size = strlen(tmp_str);
 	httpData->r_header = (char *) calloc(httpData->r_header_size + 1, sizeof(char));
