@@ -57,10 +57,6 @@ int main(int argc, char *argv[])
 {
     struct serv_param param;
 
-    param.port_srv        = port_srv;
-    param.chemin_fichiers = chemin_fichiers;
-    param.taille_log      = taille_log;
-    param.max_connexion   = max_connexion;
 	
 	// Initialisation du gestionnaire de signaux.
     init_handler(list_action);
@@ -68,6 +64,16 @@ int main(int argc, char *argv[])
 	// Traitement des options passée en paramètre.
     options(argc, argv, &port_srv, &chemin_fichiers,
             &taille_log, &max_connexion);
+
+    // Configuration de la structure paramètre qui est transmise à la fonction
+    // tcp_server.
+    param.port_srv        = calloc(strlen(port_srv) + 1, sizeof(char));
+    strcpy(param.port_srv, port_srv);
+    param.chemin_fichiers = calloc(strlen(chemin_fichiers) + 1, sizeof(char));
+    strcpy(param.chemin_fichiers, chemin_fichiers);
+    param.taille_log      = taille_log;
+    param.max_connexion   = max_connexion;
+
 	// Test du bon fonctionnement des options après traitement.
     testoption((argc - optind), &(argv[optind]), port_srv, chemin_fichiers,
                taille_log, max_connexion);

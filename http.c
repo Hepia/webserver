@@ -122,7 +122,7 @@ void* readQueryHeader(stuHttpData *httpData) {
 
 	} while (endHeader == NULL);
 
-	httpData->q_header = calloc(strlen(bHeaderTmp), sizeof(char));
+	httpData->q_header = calloc(strlen(bHeaderTmp) + 1, sizeof(char));
 	strcpy(httpData->q_header, bHeaderTmp);
 
 	return 0;
@@ -228,7 +228,7 @@ void* buildHeader(stuHttpData *httpData) {
 
 	// Création du header sous forme d'une chaîne
 	char *tmp_str = (char *) alloca(TAILLE_READ_BUFFER * sizeof(char));
-	sprintf(tmp_str, "HTTP/%s %d %s\nServer: %s\nContent-Length: %d\nContent-Type: %s\n\n", 
+	sprintf(tmp_str, "HTTP/%s %d %s\nServer: %s\nContent-Length: %d\nContent-Type: %s; charset=UTF-8\nAccept-Charset: ISO-8859-1\n\n", 
 		HTTP_VERSION, httpData->r_code, httpData->r_status, 
 		SERVER_INFO, httpData->r_content_length, httpData->r_content_mime);
 

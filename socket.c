@@ -212,7 +212,7 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 int tcp_server(void *arg)
 {
 	int *sock_name;
-	struct serv_param *param = (struct serv_param *)arg;
+	//struct serv_param *param = (struct serv_param *)arg;
 	//int sock_connected;
 
 	//struct sockaddr_in addr;
@@ -222,7 +222,7 @@ int tcp_server(void *arg)
 
 	// Création de deux sokets en fonction du numéro de port et du protocole
 	// TCP.
-	if((sock_name = create_socket_stream(NULL, param->port_srv, "tcp")) == NULL)
+	if((sock_name = create_socket_stream(NULL, ((struct serv_param *)arg)->port_srv, "tcp")) == NULL)
 	{
 		fprintf(stderr, "L'appel à create_socket_stream a échoué.\n");
 		return -1;
