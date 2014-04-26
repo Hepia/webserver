@@ -35,24 +35,27 @@
 
 #define PORT_SERVEUR_DEFAUT   "4321"
 #define TAILLE_FICHIER_LOG    1024
-#define CHEMIN_FICHIERS_HTML  "./"
+#define CHEMIN_FICHIERS_HTML  "./www/"
 #define MAX_CONNEXION_CLIENTS 10
 
 /*
  * Limites pour certain paramètre du serveur.
  */
 
-#define NUM_PORT_MAX 		65534
-#define NUM_PORT_MIN 		1024
-#define TAILLE_READ_BUFFER	256
-#define TAILLE_FILE_ECOUTE	128 // Maximum sous Linux.
+#define NUM_PORT_MAX        65534
+#define NUM_PORT_MIN        1024
+#define TAILLE_READ_BUFFER  256
+#define TAILLE_FILE_ECOUTE  128 // Maximum sous Linux.
+#define TAILLE_REQUETE_MAX  2048
+#define HTTP_VERSION        "1.1"
+#define SERVER_INFO         "Webserver/0.2.3 Felipe Paul Martins & Joachim Schmidt"
 
 /*
  * Symbole faisant référence soit à l'adresse local d'une socket, soit à l'adresse
  * distante.
  */
 
-#define LOCAL 				0
-#define DISTANT 			1
+#define LOCAL               0
+#define DISTANT             1
 
 #endif

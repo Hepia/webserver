@@ -41,7 +41,7 @@ EXEC=webserver
 
 all: $(EXEC)
 
-webserver: main.o options.o socket.o sig_handler.o process_management.o
+webserver: main.o options.o socket.o sig_handler.o process_management.o http.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 main.o: main.c ./include/options.h ./include/server_const.h
@@ -57,6 +57,9 @@ process_management.o: process_management.c ./include/process_management.h ./incl
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
 sig_handler.o: sig_handler.c ./include/sig_handler.h
+	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
+
+http.o: http.c ./include/http.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
 clean:

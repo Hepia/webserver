@@ -35,6 +35,7 @@
 #include "include/socket.h"
 #include "include/process_management.h"
 #include "include/server_const.h"
+#include "include/http.h"
 
 /*
  * La fonction create_socket_stream ouvre une socket IPv4 et une socket
@@ -252,43 +253,25 @@ int close_tcp_server(void)
  * l'adresse IP du client distant. Elle envoie également un message au client
  * contenant sa propre adresse IP. Pour finir, elle lit le flux envoyé sur la
  * socket par le client.
+ *
+ * Post interressant: http://stackoverflow.com/a/17850812
  */
 
 void process_connection(int sock)
 {
-	char buffer[TAILLE_READ_BUFFER];
-	char buffer2[2] = {0, 0};
 
-	int nb_read = 0;
+	char q_ipcli[TAILLE_READ_BUFFER];
 
 	// Affichage de l'adresse IP du serveur local.
-	fprintf(stdout, "Connexion : locale ");
+	fprintf(stdout, "Connexion : locale   ");
 	print_socket_address(sock, LOCAL, NULL);
 
 	// Affichage de l'adresse IP du client distant.
-	fprintf(stdout, "		   distante ");
-	print_socket_address(sock, DISTANT, buffer);
+	fprintf(stdout, "\t    distante ");
+	print_socket_address(sock, DISTANT, q_ipcli);
 
-	// Envoi d'un message au client contenant son adresse IP en écrivant
-	// sur la socket.
-	write(sock, "Votre adresse : ", 16);
-	write(sock, buffer, strlen(buffer));
-
-	// Boucle de lecture du flux depuis la socket et d'écriture
-	// du flux sur la sortie standard.
-	while(buffer2[0] != EOF)
-	{
-		if((nb_read = read(sock, buffer2, 1)) == 0)
-			break;
-
-		if(nb_read < 0)
-		{
-			perror("read");
-			break;
-		}
-
-		write(1, buffer2, 1);
-	}
+	// Traite la requête HTTP
+	processHttp(sock, q_ipcli);
 
 	// Fermeture de la socket.
 	close(sock);
@@ -296,7 +279,7 @@ void process_connection(int sock)
 
 /*
  * La fonction print_socket_address affiche l'adresse IPv4 ou IPv6 du serveur local ou
- * l'adresse IPvç ou IPv6 du client distant. Cette adresse peut être copié dans un buffer
+ * l'adresse IPv4 ou IPv6 du client distant. Cette adresse peut être copié dans un buffer
  * externe à la fonction.
  */
 
@@ -385,7 +368,7 @@ int print_socket_address(int sock, int where, char *ext_buffer)
 	// Copie du buffer dans un buffer externe à la fonction.
 	if(ext_buffer != NULL)
 	{
-		strcpy(ext_buffer, bufferp);
+		strcpy(ext_buffer, buffer);
 		strcat(ext_buffer, "\n");
 	}
 

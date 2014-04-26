@@ -42,17 +42,17 @@ void testoption(int argc, char *argv[],
                 char *port_srv, char *chemin_fichiers,
                 int taille_log, int max_connexion);
 
+// Définition par défaut des variables utiles au programme.
+char *port_srv        = PORT_SERVEUR_DEFAUT;
+char *chemin_fichiers = CHEMIN_FICHIERS_HTML;
+int  taille_log       = TAILLE_FICHIER_LOG;
+int  max_connexion    = MAX_CONNEXION_CLIENTS;
+
 /*
  * Point d'entrée principale du programme.
  */
-				
 int main(int argc, char *argv[])
 {
-	// Définition par défaut des variables utiles au programme.
-    static char *port_srv        = PORT_SERVEUR_DEFAUT;
-    static char *chemin_fichiers = CHEMIN_FICHIERS_HTML;
-    int         taille_log       = TAILLE_FICHIER_LOG;
-    int         max_connexion    = MAX_CONNEXION_CLIENTS;
 	
 	// Initialisation du gestionnaire de signaux.
     init_handler(list_action);
