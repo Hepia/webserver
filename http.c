@@ -91,8 +91,6 @@ int processHttp(int sockfd, char *ipcli) {
 	sendFile(httpData);
 	keepAlive = httpData->q_keep_alive;
 
-	free(httpData);
-
 	return keepAlive;
 }
 
@@ -102,7 +100,7 @@ int processHttp(int sockfd, char *ipcli) {
  */
 void* readQueryHeader(stuHttpData *httpData) {
 
-	httpData->q_header = (char *) calloc(TAILLE_REQUETE_MAX, sizeof(char));
+	httpData->q_header = calloc(TAILLE_REQUETE_MAX, sizeof(char));
 	char *endHeader = NULL;
 	char *btmp;
 	int nb;
@@ -111,7 +109,7 @@ void* readQueryHeader(stuHttpData *httpData) {
 	// Lecture du flux entrant pour récupérer le header de la requête
 	do
 	{
-		btmp = (char *) calloc(TAILLE_READ_BUFFER, sizeof(char));
+		btmp = calloc(TAILLE_READ_BUFFER, sizeof(char));
 
 		if ((nb = read(httpData->socketfd, btmp,TAILLE_READ_BUFFER)) < 0) {
 			perror("read");
@@ -130,9 +128,6 @@ void* readQueryHeader(stuHttpData *httpData) {
 
 	} while (endHeader == NULL);
 
-	httpData->q_header = calloc(strlen(bHeaderTmp) + 1, sizeof(char));
-	strcpy(httpData->q_header, bHeaderTmp);
-
 	return 0;
 }
 
@@ -142,7 +137,6 @@ void* readQueryHeader(stuHttpData *httpData) {
  */
 void* parseHeader(stuHttpData *httpData) {
 
-<<<<<<< HEAD
 	char *token;
 	char *rUri 		= calloc(TAILLE_READ_BUFFER, sizeof(char));
 	httpData->q_keep_alive = 0;
@@ -164,18 +158,15 @@ void* parseHeader(stuHttpData *httpData) {
 	if (strcmp(rUri, "/") == 0)
 		httpData->q_filename = FILE_INDEX;
 	else {
-		httpData->q_filename = (char *) calloc(strlen(rUri)-1, sizeof(char));
+		httpData->q_filename = calloc(strlen(rUri)-1, sizeof(char));
 		strcpy(httpData->q_filename, rUri+1);
 	}
 
 	// Création du chemin complet du fichier
-	httpData->q_filepath = (char *) calloc(strlen(chemin_fichiers) + strlen(httpData->q_filename), sizeof(char));
+	httpData->q_filepath = calloc(strlen(chemin_fichiers) + strlen(httpData->q_filename), sizeof(char));
 	sprintf(httpData->q_filepath, "%s%s", chemin_fichiers, httpData->q_filename);
 
-	free(rMethod);
 	free(rUri);
-	free(rHost);
-
 	return 0;
 }
 
@@ -227,7 +218,7 @@ void* sendFile(stuHttpData *httpData) {
 void* buildHeader(stuHttpData *httpData) {
 
 	// TODO Date
-	//httpData->r_date = Date
+	//get_local_time(&httpData->r_date, 2);
 
 	// Status
 	if		(httpData->r_code == 200)	httpData->r_status = "OK";
@@ -243,7 +234,7 @@ void* buildHeader(stuHttpData *httpData) {
 					 SERVER_INFO, httpData->r_content_length);
 
 	httpData->r_header_size = strlen(tmp_str);
-	httpData->r_header = (char *) calloc(httpData->r_header_size + 1, sizeof(char));
+	httpData->r_header = calloc(httpData->r_header_size + 1, sizeof(char));
 	strcpy(httpData->r_header, tmp_str);
 
 	return 0;
