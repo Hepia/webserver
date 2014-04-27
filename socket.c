@@ -260,7 +260,8 @@ int close_tcp_server(void)
 void process_connection(int sock)
 {
 
-	char q_ipcli[TAILLE_READ_BUFFER];
+	char ipcli[TAILLE_READ_BUFFER];
+	int keepAlive;
 
 	// Affichage de l'adresse IP du serveur local.
 	fprintf(stdout, "Connexion : locale   ");
@@ -268,10 +269,14 @@ void process_connection(int sock)
 
 	// Affichage de l'adresse IP du client distant.
 	fprintf(stdout, "\t    distante ");
-	print_socket_address(sock, DISTANT, q_ipcli);
+	print_socket_address(sock, DISTANT, ipcli);
 
-	// Traite la requête HTTP
-	processHttp(sock, q_ipcli);
+	// do
+	// {
+		// Traite la requête HTTP
+		keepAlive = processHttp(sock, ipcli);
+		// printf("keepAlive\n");
+	// } while (keepAlive);
 
 	// Fermeture de la socket.
 	close(sock);
@@ -369,7 +374,7 @@ int print_socket_address(int sock, int where, char *ext_buffer)
 	if(ext_buffer != NULL)
 	{
 		strcpy(ext_buffer, buffer);
-		strcat(ext_buffer, "\n");
+		// strcat(ext_buffer, "\n");
 	}
 
 	if(addr4 != NULL)

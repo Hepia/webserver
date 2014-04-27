@@ -41,10 +41,9 @@ void* create_new_elem_hist(char *url, char *ipcli, char *date, int staterr) {
 /**
  * 
  */
-void* processHttp(int sockfd, char *ipcli) {
+int processHttp(int sockfd, char *ipcli) {
 
 	int			rHttpCode;
-	elem_hist	*elemHist = NULL;
 	stuHttpData	*httpData = (stuHttpData *) alloca(sizeof(stuHttpData));
 
 	httpData->socketfd = sockfd;
@@ -52,8 +51,6 @@ void* processHttp(int sockfd, char *ipcli) {
 
 	readQueryHeader(httpData);
 	parseHeader(httpData);
-
-	printf("URI%s\n", httpData->q_filepath);
 
 	if ((rHttpCode = fileInfo(httpData)) == 404) {
 	// Si le fichier n'existe pas, création du header correspondant et
@@ -78,12 +75,14 @@ void* processHttp(int sockfd, char *ipcli) {
 	// Création du header de réponse
 	buildHeader(httpData);
 
-	char *fullUri = (char *) alloca(strlen(httpData->q_host) + strlen(httpData->q_filepath) * sizeof(char));
-	elemHist = (elem_hist *) create_new_elem_hist(fullUri, httpData->q_ipcli, "DATE", rHttpCode);
+	char *fullUri = (char *) alloca((1 + sizeof(httpData->q_host) + sizeof(httpData->q_filename)) * sizeof(char));
+	sprintf(fullUri, "%s/%s", httpData->q_host, httpData->q_filename);
+
+	create_new_elem_hist(fullUri, httpData->q_ipcli, "DATE", rHttpCode);
 
 	sendFile(httpData);
 
-	return 0;
+	return httpData->q_keep_alive;
 }
 
 /**
@@ -92,9 +91,9 @@ void* processHttp(int sockfd, char *ipcli) {
  */
 void* readQueryHeader(stuHttpData *httpData) {
 
-	char *bHeaderTmp = (char *) alloca(TAILLE_REQUETE_MAX * sizeof(char));
-	char *btmp;
+	httpData->q_header = (char *) calloc(TAILLE_REQUETE_MAX, sizeof(char));
 	char *endHeader = NULL;
+	char *btmp;
 	int nb;
 	int nb_read = 0;
 
@@ -114,14 +113,11 @@ void* readQueryHeader(stuHttpData *httpData) {
 			// respond error 413 Request Entity Too Large
 			// http://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html#sec6.1
 
-		strcat(bHeaderTmp, btmp);
-		endHeader = strstr(bHeaderTmp, CRLF CRLF);
+		strcat(httpData->q_header, btmp);
+		endHeader = strstr(httpData->q_header, CRLF CRLF);
 		free(btmp);
 
 	} while (endHeader == NULL);
-
-	httpData->q_header = calloc(strlen(bHeaderTmp), sizeof(char));
-	strcpy(httpData->q_header, bHeaderTmp);
 
 	return 0;
 }
@@ -132,38 +128,38 @@ void* readQueryHeader(stuHttpData *httpData) {
  */
 void* parseHeader(stuHttpData *httpData) {
 
-	int  filepathSize;
-	int  rKeepAlive = 0;
-	char *filepath, *filename, *token;
-	char *rMethod 	= (char *)alloca(16 * sizeof(char));
-	char *rUri 		= (char *)alloca(TAILLE_READ_BUFFER * sizeof(char));
-	char *rHost 	= (char *)alloca(TAILLE_READ_BUFFER * sizeof(char));
+	char *token;
+	char *rUri = (char *)alloca(TAILLE_READ_BUFFER * sizeof(char));
 
-	sscanf(httpData->q_header, "%s %s", rMethod, rUri);
+	httpData->q_keep_alive = 0;
+	httpData->q_method     = (char *) calloc(16, sizeof(char));
+	httpData->q_host       = (char *) calloc(TAILLE_READ_BUFFER, sizeof(char));
+
+	sscanf(httpData->q_header, "%s %s", httpData->q_method, rUri);
 
 	// Extraction des éléments nécessaire dans l'en-tête
 	token = strstr(httpData->q_header, "Host:");
-	sscanf(token, "%*s %s", rHost);
+	sscanf(token, "%*s %s", httpData->q_host);
 
 	if (strstr(httpData->q_header, "Connection: keep-alive") != NULL) {
-		rKeepAlive = 1;
+		httpData->q_keep_alive = 1;
 	}
 
-	printf("Method:%s\n", rMethod);
+	printf("Keep Alive:%d\n", httpData->q_keep_alive);
+
 
 	// Si l'URL est la racine "/" il faut spécifier le fichier index par défaut
 	// Sinon récupérer le URL du fichier sans le premier "/"
 	if (strcmp(rUri, "/") == 0)
-		filename = FILE_INDEX;
+		httpData->q_filename = FILE_INDEX;
 	else {
-		filename = (char *) alloca(strlen(rUri)-1);
-		strcpy(filename, rUri+1);
+		httpData->q_filename = (char *) calloc(strlen(rUri)-1, sizeof(char));
+		strcpy(httpData->q_filename, rUri+1);
 	}
 
 	// Création du chemin complet du fichier
-	filepathSize = strlen(chemin_fichiers) + strlen(filename);
-	filepath = (char *) calloc(filepathSize, sizeof(char));
-	sprintf(filepath, "%s%s", chemin_fichiers, filename);
+	httpData->q_filepath = (char *) calloc(strlen(chemin_fichiers) + strlen(httpData->q_filename), sizeof(char));
+	sprintf(httpData->q_filepath, "%s%s", chemin_fichiers, httpData->q_filename);
 
 	return 0;
 }

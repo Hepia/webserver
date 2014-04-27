@@ -29,19 +29,21 @@
 typedef struct stuHttpData stuHttpData;
 struct stuHttpData 
 {
-    int  socketfd;
-    char *q_ipcli;
-    char *q_method;
-    char *q_host;
-    char *q_filepath;
-    char *q_header;			// En-tête de la requête HTTP
-    char *r_status;
-    char *r_date;
-    char *r_content_mime;
-    char *r_header;				// En-tête HTTP de réponse
-    int  r_code;
-    int  r_content_length;
-    int  r_header_size;
+	int  socketfd;
+	char *q_ipcli;
+	char *q_method;
+	char *q_host;
+	char *q_filename;
+	char *q_filepath;
+	char *q_header;				// En-tête de la requête HTTP
+	int  q_keep_alive;
+	char *r_status;
+	char *r_date;
+	char *r_content_mime;
+	char *r_header;				// En-tête HTTP de réponse
+	int  r_code;
+	int  r_content_length;
+	int  r_header_size;
 };
 
 typedef struct elem_hist elem_hist;
@@ -60,7 +62,7 @@ void* create_new_elem_hist(char *url, char *ipcli, char *date, int staterr);
  /*
  * Prototypes des fonctions de gestion des options.
  */
-void* processHttp       (int sockfd, char *qIpCli);
+int   processHttp       (int sockfd, char *qIpCli);
 void* readQueryHeader   (stuHttpData *httpData);
 void* parseHeader       (stuHttpData *httpData);
 void* buildHeader       (stuHttpData *httpData);
