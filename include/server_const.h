@@ -58,4 +58,12 @@
 #define LOCAL               0
 #define DISTANT             1
 
+struct serv_param
+{
+	char *port_srv;
+	char *chemin_fichiers;
+	int   taille_log;
+	int   max_connexion;
+};
+
 #endif

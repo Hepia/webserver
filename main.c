@@ -27,12 +27,16 @@
 #include "include/socket.h"
 #include "include/sig_handler.h"
 #include "include/server_const.h"
+#include "include/histo.h"
 
 /*
  * Variable externe se trouvant dans le fichier sig_handler.c.
  */
  
 extern struct sigaction *list_action;
+
+// structure contenant les logs.
+struct queue_hist *q_log = NULL;
 
 /*
  * Prototype des fonctions propres au fichier main.c.
@@ -43,6 +47,7 @@ void testoption(int argc, char *argv[],
                 int taille_log, int max_connexion);
 
 // Définition par défaut des variables utiles au programme.
+
 char *port_srv        = PORT_SERVEUR_DEFAUT;
 char *chemin_fichiers = CHEMIN_FICHIERS_HTML;
 int  taille_log       = TAILLE_FICHIER_LOG;
@@ -51,21 +56,39 @@ int  max_connexion    = MAX_CONNEXION_CLIENTS;
 /*
  * Point d'entrée principale du programme.
  */
+
 int main(int argc, char *argv[])
 {
+    struct serv_param param;
 	
 	// Initialisation du gestionnaire de signaux.
     init_handler(list_action);
 
+
 	// Traitement des options passée en paramètre.
     options(argc, argv, &port_srv, &chemin_fichiers,
             &taille_log, &max_connexion);
+
+    // Configuration de la structure paramètre qui est transmise à la fonction
+    // tcp_server.
+    param.port_srv        = calloc(strlen(port_srv) + 1, sizeof(char));
+    strcpy(param.port_srv, port_srv);
+    param.chemin_fichiers = calloc(strlen(chemin_fichiers) + 1, sizeof(char));
+    strcpy(param.chemin_fichiers, chemin_fichiers);
+    param.taille_log      = taille_log;
+    param.max_connexion   = max_connexion;
+
 	// Test du bon fonctionnement des options après traitement.
     testoption((argc - optind), &(argv[optind]), port_srv, chemin_fichiers,
                taille_log, max_connexion);
 
+    q_log = new_queue(get_size_queue, get_max_size_queue,
+                      push, pop,
+                      get_elem, get_nb_elem,
+                      get_size_elem, taille_log);
+
 	// Lancement du serveur TCP/IP.
-    tcp_server(port_srv);
+    tcp_server((void *)&param);
 
     return EXIT_SUCCESS;
 }

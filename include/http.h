@@ -46,19 +46,6 @@ struct stuHttpData
 	int  r_header_size;
 };
 
-typedef struct elem_hist elem_hist;
-struct elem_hist
-{
-	char      *q_url;
-	char      *q_ipcli;
-	char      *q_date;
-	int       q_stateerr;
-	elem_hist *q_next;
-};
-
-void* create_new_elem_hist(char *url, char *ipcli, char *date, int staterr);
-
-
  /*
  * Prototypes des fonctions de gestion des options.
  */

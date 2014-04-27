@@ -18,23 +18,9 @@
  * Authors: Felipe Paul Martins, Joachim Schmidt
  */
 
-#ifndef _SOCKET_H_
-#define _SOCKET_H_
+#ifndef _LOCAL_TIME_H_
+#define _LOCAL_TIME_H_
 
-#ifndef SOL_IPV6
-#define SOL_IPV6 41 // From /usr/src/linux-headers-3.11.0-12-generic/include/linux/socket.h:274
-#endif
-
-/*
- * Prototypes des fonctions de gestion des sockets et des communications
- * réseaux.
- */
-
-int* create_socket_stream(const char *host_name, const char *serv_port, 
-                          const char *proto_name);
-int  tcp_server          (void *arg);
-int  close_tcp_server    (void);
-void process_connection  (int sock);
-int  print_socket_address(int sock, int where, char *ext_buffer);
+int get_local_time(char **buffer, int mode);
 
 #endif

@@ -32,22 +32,22 @@
 
 #include "include/http.h"
 #include "include/server_const.h"
+#include "include/local_time.h"
+#include "include/histo.h"
 
 extern char *chemin_fichiers;
 
-void* create_new_elem_hist(char *url, char *ipcli, char *date, int staterr) {
-	printf("LOG: <%s>, <%s>, <%s>, <%d>\n", url, ipcli, date, staterr);
-	// TODO
-	return 0;
-}
+// structure contenant les logs.
+extern struct queue_hist *q_log;
 
 /**
  * 
  */
 int processHttp(int sockfd, char *ipcli) {
 
-	int			rHttpCode, keepAlive;
-	stuHttpData	*httpData = (stuHttpData *) calloc(1,sizeof(stuHttpData));
+	int              rHttpCode, keepAlive;
+	struct elem_hist *elemHist = NULL;
+	stuHttpData      *httpData = (stuHttpData *) calloc(1,sizeof(stuHttpData));
 
 	httpData->socketfd = sockfd;
 	httpData->q_ipcli  = ipcli;
@@ -81,8 +81,13 @@ int processHttp(int sockfd, char *ipcli) {
 	char *fullUri = (char *) alloca((1 + sizeof(httpData->q_host) + sizeof(httpData->q_filename)) * sizeof(char));
 	sprintf(fullUri, "%s/%s", httpData->q_host, httpData->q_filename);
 
-	create_new_elem_hist(fullUri, httpData->q_ipcli, "DATE", rHttpCode);
+	elemHist = (struct elem_hist *) create_new_elem_hist(fullUri, httpData->q_ipcli, rHttpCode);
 
+	// Ajoute d'une nouvelle entrée dans la file de logs.
+	q_log->push((void *)q_log, (void *)elemHist);
+	print_queue((void *)q_log);
+
+	// Envoi du fichier
 	sendFile(httpData);
 	keepAlive = httpData->q_keep_alive;
 
@@ -125,6 +130,9 @@ void* readQueryHeader(stuHttpData *httpData) {
 
 	} while (endHeader == NULL);
 
+	httpData->q_header = calloc(strlen(bHeaderTmp) + 1, sizeof(char));
+	strcpy(httpData->q_header, bHeaderTmp);
+
 	return 0;
 }
 
@@ -134,12 +142,12 @@ void* readQueryHeader(stuHttpData *httpData) {
  */
 void* parseHeader(stuHttpData *httpData) {
 
+<<<<<<< HEAD
 	char *token;
-	char *rUri = (char *)alloca(TAILLE_READ_BUFFER * sizeof(char));
-
+	char *rUri 		= calloc(TAILLE_READ_BUFFER, sizeof(char));
 	httpData->q_keep_alive = 0;
-	httpData->q_method     = (char *) calloc(16, sizeof(char));
-	httpData->q_host       = (char *) calloc(TAILLE_READ_BUFFER, sizeof(char));
+	httpData->q_method     = calloc(16, sizeof(char));
+	httpData->q_host       = calloc(TAILLE_READ_BUFFER, sizeof(char));
 
 	sscanf(httpData->q_header, "%s %s", httpData->q_method, rUri);
 
@@ -163,6 +171,10 @@ void* parseHeader(stuHttpData *httpData) {
 	// Création du chemin complet du fichier
 	httpData->q_filepath = (char *) calloc(strlen(chemin_fichiers) + strlen(httpData->q_filename), sizeof(char));
 	sprintf(httpData->q_filepath, "%s%s", chemin_fichiers, httpData->q_filename);
+
+	free(rMethod);
+	free(rUri);
+	free(rHost);
 
 	return 0;
 }
@@ -216,10 +228,6 @@ void* buildHeader(stuHttpData *httpData) {
 
 	// TODO Date
 	//httpData->r_date = Date
-	// TODO Mime dynamique
-
-	// printf("MIME:%s\n", httpData->r_content_mime);
-	// httpData->r_content_mime	= "text/html";
 
 	// Status
 	if		(httpData->r_code == 200)	httpData->r_status = "OK";
@@ -228,8 +236,11 @@ void* buildHeader(stuHttpData *httpData) {
 
 	// Création du header sous forme d'une chaîne
 	char *tmp_str = (char *) alloca(TAILLE_READ_BUFFER * sizeof(char));
-	sprintf(tmp_str, "HTTP/%s %d %s\nServer: %s\nContent-Length: %d\n\n", HTTP_VERSION, httpData->r_code, httpData->r_status, SERVER_INFO, httpData->r_content_length);
-	// sprintf(tmp_str, "HTTP/%s %d %s\nServer: %s\nContent-Length: %d\nContent-Type: %s\n\n", HTTP_VERSION, httpData->r_code, httpData->r_status, SERVER_INFO, httpData->r_content_length, httpData->r_content_mime);
+	sprintf(tmp_str, "HTTP/%s %d %s\n"
+					 "Server: %s\n"
+					 "Content-Length: %d\n\n", 
+					 HTTP_VERSION, httpData->r_code, httpData->r_status, 
+					 SERVER_INFO, httpData->r_content_length);
 
 	httpData->r_header_size = strlen(tmp_str);
 	httpData->r_header = (char *) calloc(httpData->r_header_size + 1, sizeof(char));
