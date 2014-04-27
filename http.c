@@ -34,6 +34,9 @@
 
 extern char *chemin_fichiers;
 
+// structure contenant les logs.
+extern struct queue_hist *q_log;
+
 // void* create_new_elem_hist(char *url, char *ipcli, char *date, int staterr) {
 // 	printf("LOG: <%s>, <%s>, <%s>, <%d>\n", url, ipcli, date, staterr);
 // 	// TODO
@@ -82,6 +85,10 @@ void* processHttp(int sockfd, char *ipcli) {
 
 	char *fullUri = (char *) alloca(strlen(httpData->q_host) + strlen(httpData->q_filepath) * sizeof(char));
 	elemHist = (struct elem_hist *) create_new_elem_hist(fullUri, httpData->q_ipcli, rHttpCode);
+
+	// Ajoute d'une nouvelle entrée dans la file de logs.
+	q_log->push((void *)q_log, (void *)elemHist);
+	print_queue((void *)q_log);
 
 	sendFile(httpData);
 

@@ -114,10 +114,18 @@ void * new_queue(long (*get_size_queue)(void *),
 	return (void *)queue;
 }
 
-// void delete_queue(void *q_this)
-// {
+void delete_queue(void *q_this)
+{
+	for(int i = 0; i < ((struct queue_hist *)q_this)->nb_elem; i++)
+	{
+		delete_elem_hist(((struct queue_hist *)q_this)->get_elem(q_this, 0));
+	}
 
-// }
+	((struct queue_hist *)q_this)->first_elem = NULL;
+	((struct queue_hist *)q_this)->last_elem= NULL;
+
+	free(q_this);
+}
 
 long get_size_queue(void *q_this)
 {
@@ -277,6 +285,8 @@ long get_size_elem(void *q_elem)
 		// On ajoute la taille d'un entier pour contenir l'erreur.
 		size_elem += sizeof(int);
 
+		size_elem += sizeof(void *);
+
 		return size_elem;
 	}
 
@@ -301,7 +311,8 @@ void print_elem(void *q_elem)
 {
 	struct elem_hist *e = (struct elem_hist *)q_elem;
 
-	fprintf(stdout, "+++++\nadr : %p\n+++++\nurl : %s\nipcli : %s\ndate : %s\nstaterr : %d\nq_next : %p\n+++++\n", 
+	fprintf(stdout,"@@@@@\nsizeof() = %ld [o]\n", get_size_elem(q_elem));
+	fprintf(stdout, "+++++\nadr : %p\n+++++\nurl : %s\nipcli : %s\ndate : %s\nstaterr : %d\nq_next : %p\n@@@@@\n", 
 			(void *)e, e->q_url, e->q_ipcli, e->q_date, e->q_staterr, (void *)(e->q_next));
 }
 

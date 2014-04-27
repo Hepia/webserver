@@ -61,7 +61,7 @@ void * new_queue    		(long (*get_size_queue)(void *),
 							 long (*get_size_elem) (void *),
 							 long max_size_queue);
 
-// void   delete_queue  		(void *q_this);
+void   delete_queue  		(void *q_this);
 
 long   get_size_queue		(void *q_this);
 long   get_max_size_queue	(void *q_this);
