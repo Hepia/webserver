@@ -27,6 +27,9 @@
 #include <fcntl.h>
 #include <alloca.h>
 
+#include <sys/types.h>
+
+
 #include "include/http.h"
 #include "include/server_const.h"
 
@@ -43,8 +46,8 @@ void* create_new_elem_hist(char *url, char *ipcli, char *date, int staterr) {
  */
 int processHttp(int sockfd, char *ipcli) {
 
-	int			rHttpCode;
-	stuHttpData	*httpData = (stuHttpData *) alloca(sizeof(stuHttpData));
+	int			rHttpCode, keepAlive;
+	stuHttpData	*httpData = (stuHttpData *) calloc(1,sizeof(stuHttpData));
 
 	httpData->socketfd = sockfd;
 	httpData->q_ipcli  = ipcli;
@@ -81,8 +84,11 @@ int processHttp(int sockfd, char *ipcli) {
 	create_new_elem_hist(fullUri, httpData->q_ipcli, "DATE", rHttpCode);
 
 	sendFile(httpData);
+	keepAlive = httpData->q_keep_alive;
 
-	return httpData->q_keep_alive;
+	free(httpData);
+
+	return keepAlive;
 }
 
 /**
@@ -145,9 +151,6 @@ void* parseHeader(stuHttpData *httpData) {
 		httpData->q_keep_alive = 1;
 	}
 
-	printf("Keep Alive:%d\n", httpData->q_keep_alive);
-
-
 	// Si l'URL est la racine "/" il faut spécifier le fichier index par défaut
 	// Sinon récupérer le URL du fichier sans le premier "/"
 	if (strcmp(rUri, "/") == 0)
@@ -175,7 +178,8 @@ void* sendFile(stuHttpData *httpData) {
 
 	// Envoi du header
 	if (write(httpData->socketfd, httpData->r_header, httpData->r_header_size) < 0) {
-		perror("write");
+		perror("Write Header");
+
 		exit(EXIT_FAILURE);
 	}
 
@@ -193,7 +197,7 @@ void* sendFile(stuHttpData *httpData) {
 		}
 
 		if ((write(httpData->socketfd, bufFile, rd)) < 0) {
-			perror("write");
+			perror("Write File");
 			exit(EXIT_FAILURE);
 		}
 	} while (rd != 0);
@@ -213,7 +217,9 @@ void* buildHeader(stuHttpData *httpData) {
 	// TODO Date
 	//httpData->r_date = Date
 	// TODO Mime dynamique
-	httpData->r_content_mime	= "text/html";
+
+	// printf("MIME:%s\n", httpData->r_content_mime);
+	// httpData->r_content_mime	= "text/html";
 
 	// Status
 	if		(httpData->r_code == 200)	httpData->r_status = "OK";
@@ -222,9 +228,8 @@ void* buildHeader(stuHttpData *httpData) {
 
 	// Création du header sous forme d'une chaîne
 	char *tmp_str = (char *) alloca(TAILLE_READ_BUFFER * sizeof(char));
-	sprintf(tmp_str, "HTTP/%s %d %s\nServer: %s\nContent-Length: %d\nContent-Type: %s\n\n", 
-		HTTP_VERSION, httpData->r_code, httpData->r_status, 
-		SERVER_INFO, httpData->r_content_length, httpData->r_content_mime);
+	sprintf(tmp_str, "HTTP/%s %d %s\nServer: %s\nContent-Length: %d\n\n", HTTP_VERSION, httpData->r_code, httpData->r_status, SERVER_INFO, httpData->r_content_length);
+	// sprintf(tmp_str, "HTTP/%s %d %s\nServer: %s\nContent-Length: %d\nContent-Type: %s\n\n", HTTP_VERSION, httpData->r_code, httpData->r_status, SERVER_INFO, httpData->r_content_length, httpData->r_content_mime);
 
 	httpData->r_header_size = strlen(tmp_str);
 	httpData->r_header = (char *) calloc(httpData->r_header_size + 1, sizeof(char));
