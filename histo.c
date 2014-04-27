@@ -116,13 +116,15 @@ void * new_queue(long (*get_size_queue)(void *),
 
 void delete_queue(void *q_this)
 {
-	for(int i = 0; i < ((struct queue_hist *)q_this)->nb_elem; i++)
+	int nb_elem = ((struct queue_hist *)q_this)->nb_elem;
+
+	for(int i = 0; i < nb_elem; i++)
 	{
-		delete_elem_hist(((struct queue_hist *)q_this)->get_elem(q_this, 0));
+		((struct queue_hist *)q_this)->pop(q_this);
 	}
 
 	((struct queue_hist *)q_this)->first_elem = NULL;
-	((struct queue_hist *)q_this)->last_elem= NULL;
+	((struct queue_hist *)q_this)->last_elem  = NULL;
 
 	free(q_this);
 }
@@ -298,7 +300,7 @@ void print_queue(void *q_this)
 	struct queue_hist *q = (struct queue_hist *)q_this;
 	struct elem_hist *e = (struct elem_hist *)(q->last_elem);
 
-	fprintf(stdout, "\nprint queue\n-----------\n");
+	fprintf(stdout, "\nprint queue @ = %p\n-----------\n", q_this);
 
 	for(int i = 0; i < q->get_nb_elem(q_this); i++)
 	{

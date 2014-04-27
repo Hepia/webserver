@@ -84,8 +84,8 @@ int processHttp(int sockfd, char *ipcli) {
 	elemHist = (struct elem_hist *) create_new_elem_hist(fullUri, httpData->q_ipcli, rHttpCode);
 
 	// Ajoute d'une nouvelle entrée dans la file de logs.
-	q_log->push((void *)q_log, (void *)elemHist);
-	print_queue((void *)q_log);
+	((struct queue_hist *)q_log)->push(q_log, (void *)elemHist);
+	print_queue(q_log);
 
 	// Envoi du fichier
 	sendFile(httpData);

@@ -79,8 +79,10 @@ void handler(int num)
 			fprintf(stdout, "Processus %d : signal SIGINT\nInterruption du processus\n", getpid());
 
 			// Suppression de la file de log de l'espace d'adressage du processus.
-			delete_queue(q_log);
+			if(q_log != NULL)
+				delete_queue(q_log);
 			delete_handler(list_action);
+			
 			// On termine les processus proprement.
 			exit(EXIT_SUCCESS);
 

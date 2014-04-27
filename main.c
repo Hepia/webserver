@@ -35,9 +35,6 @@
  
 extern struct sigaction *list_action;
 
-// structure contenant les logs.
-struct queue_hist *q_log = NULL;
-
 /*
  * Prototype des fonctions propres au fichier main.c.
  */
@@ -81,11 +78,6 @@ int main(int argc, char *argv[])
 	// Test du bon fonctionnement des options après traitement.
     testoption((argc - optind), &(argv[optind]), port_srv, chemin_fichiers,
                taille_log, max_connexion);
-
-    q_log = new_queue(get_size_queue, get_max_size_queue,
-                      push, pop,
-                      get_elem, get_nb_elem,
-                      get_size_elem, taille_log);
 
 	// Lancement du serveur TCP/IP.
     tcp_server((void *)&param);

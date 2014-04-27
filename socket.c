@@ -36,6 +36,17 @@
 #include "include/process_management.h"
 #include "include/server_const.h"
 #include "include/http.h"
+#include "include/histo.h"
+
+//extern struct queue_hist *q_log;
+
+extern char *port_srv;
+extern char *chemin_fichiers;
+extern int  taille_log;
+extern int  max_connexion;
+
+// structure contenant les logs.
+struct queue_hist *q_log = NULL;
 
 /*
  * La fonction create_socket_stream ouvre une socket IPv4 et une socket
@@ -263,6 +274,11 @@ void process_connection(int sock)
 
 	char ipcli[TAILLE_READ_BUFFER];
 	int keepAlive;
+
+	q_log = new_queue(get_size_queue, get_max_size_queue,
+                      push, pop,
+                      get_elem, get_nb_elem,
+                      get_size_elem, taille_log);
 
 	// Affichage de l'adresse IP du serveur local.
 	fprintf(stdout, "Connexion : locale   ");
