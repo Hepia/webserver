@@ -48,7 +48,7 @@
 #define TAILLE_FILE_ECOUTE  128 // Maximum sous Linux.
 #define TAILLE_REQUETE_MAX  2048
 #define HTTP_VERSION        "1.1"
-#define SERVER_INFO         "Webserver/0.2.3 Felipe Paul Martins & Joachim Schmidt"
+#define SERVER_INFO         "Webserver/0.3.1 Felipe Paul Martins & Joachim Schmidt"
 
 /*
  * Symbole faisant référence soit à l'adresse local d'une socket, soit à l'adresse
