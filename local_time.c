@@ -26,6 +26,11 @@
 
 #include "include/local_time.h"
 
+/*
+ * La fonction get_local_time crée et renvoi un buffer contenant la date et l'heure locale.
+ * Le paramètre mode permet de modifier le formatage de la date.
+ */
+
 int get_local_time(char **buffer, int mode)
 {
 	char buf_tmp[50];
@@ -33,18 +38,23 @@ int get_local_time(char **buffer, int mode)
 	time_t temps;
 	struct tm *tm;
 	
+	// Remplit la variable temps avec le nombre de seconde écoulée depuis le
+	// 1er janvier 1970.
 	if((time(&temps)) == (time_t)-1)
 	{
 		perror("time");
 		return -1;
 	}
 
+	// Remplit les champs de la structure tm en fonction du temps en seconde écoulé
+	// depuis le 1er janvier 1970.
 	if((tm = localtime(&temps)) == NULL)
 	{
 		perror("localtime");
 		return -1;
 	}
 
+	// Chois du mode pour de formatage.
 	if(mode == 0)
 		sprintf(buf_tmp, "[localtime = %02d/%02d/%02d - %02d:%02d:%02d - (%s)]",
 				tm->tm_mday, tm->tm_mon + 1, tm->tm_year % 100,
@@ -62,6 +72,7 @@ int get_local_time(char **buffer, int mode)
 
 	size = strlen(buf_tmp);
 
+	// Création du buffer contenant la date.
 	if((*buffer = calloc(size + 1, sizeof(char))) == NULL)
 	{
 		perror("calloc");
@@ -70,5 +81,6 @@ int get_local_time(char **buffer, int mode)
 
 	strcpy(*buffer, buf_tmp);
 
+	// On retroune la taille du buffer.
 	return size;
 }

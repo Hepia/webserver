@@ -21,6 +21,10 @@
 #ifndef _LOCAL_TIME_H_
 #define _LOCAL_TIME_H_
 
+/*
+ * Prototypes des fonctions.
+ */
+
 int get_local_time(char **buffer, int mode);
 
 #endif
