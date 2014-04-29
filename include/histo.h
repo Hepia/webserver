@@ -21,6 +21,12 @@
 #ifndef _HISTO_H_
 #define _HISTO_H_
 
+/*
+ * La structure elem_hist permet de contenir les informations relatives à chaques requêtes
+ * effectuée par un client web. Il s'agit s'une file (FIFO) d'éléments représentée en
+ * mémoire sous la forme d'une liste chainée.
+ */
+
 struct elem_hist
 {
 	char             *q_url;
@@ -29,6 +35,13 @@ struct elem_hist
 	int               q_staterr;
 	struct elem_hist *q_next;
 };
+
+/*
+ * La structure queue_hist est la structure de base qui permet de manipuler une file (FIFO)
+ * d'élément. Elle renseigne les fonctions servant à la manipulation de la file, au nombre
+ * d'éléments contenu dans la file, la taille en octet de la file et la taille maximum de
+ * de la file en octet.
+ */
 
 struct queue_hist
 {
@@ -48,9 +61,17 @@ struct queue_hist
 	long   (*get_size_elem) 	(void *);
 };
 
+/*
+ * Prototypes des fonctions pour la manipulation de la structure elem_hist.
+ */
+
 void * create_new_elem_hist	(char *url, char *ipcli,
 							 int staterr);
 void   delete_elem_hist		(void *q_elem);
+
+/*
+ * Prototypes des fonctions pour la manipulation de la structure queue_hist.
+ */
 
 void * new_queue    		(long (*get_size_queue)(void *),
 							 long (*get_max_size_queue)(void *),
@@ -73,6 +94,11 @@ long   get_size_elem		(void *q_elem);
 
 void   print_queue			(void *q_this);
 void   print_elem			(void *q_elem);
+
+/*
+ * Prototypes des fonctions pour la génération des noms de fichiers qui contienent
+ * un backup des logs.
+ */
 
 int    rand_a_b	  			(int a, int b);
 int    get_file_name 		(char **buffer);

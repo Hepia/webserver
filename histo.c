@@ -27,6 +27,11 @@
 #include "include/histo.h"
 #include "include/local_time.h"
 
+/*
+ * La fonction create_new_elem_hist crée un nouvel élément et remplis les champs de la
+ * structure correspondante.
+ */
+
 void * create_new_elem_hist(char *url, char *ipcli,
 							int staterr)
 {
@@ -38,6 +43,7 @@ void * create_new_elem_hist(char *url, char *ipcli,
 		return NULL;
 	}
 
+	// Création et initialisation du champs q_url.
 	if((elem->q_url = calloc(strlen(url) + 1, sizeof(char))) == NULL)
 	{
 		perror("calloc");
@@ -46,6 +52,7 @@ void * create_new_elem_hist(char *url, char *ipcli,
 
 	strcpy(elem->q_url, url);
 
+	// Création et initialisation du champs q_ipcli.
 	if((elem->q_ipcli = calloc(strlen(ipcli) + 1, sizeof(char))) == NULL)
 	{
 		perror("calloc");
@@ -54,6 +61,7 @@ void * create_new_elem_hist(char *url, char *ipcli,
 
 	strcpy(elem->q_ipcli, ipcli);
 
+	// Initialisation du champs q_staterr.
 	elem->q_staterr = staterr;
 
 	if(get_local_time(&(elem->q_date), 0) == -1)
@@ -62,11 +70,16 @@ void * create_new_elem_hist(char *url, char *ipcli,
 		return NULL;
 	}
 
+	// Initialisation du champs q_next.
 	elem->q_next = NULL;
 
 	return (void *)elem;
 }
 
+/*
+ * La fonction delete_elem_hist permet de supprimer un élément crée dynamiquement.
+ */
+ 
 void delete_elem_hist(void *q_elem)
 {
 	struct elem_hist *tmp_elem = (struct elem_hist *)q_elem;
@@ -79,6 +92,12 @@ void delete_elem_hist(void *q_elem)
 	tmp_elem->q_next = NULL;
 	tmp_elem = NULL;
 }
+
+/*
+ * La fonction new_queue permet de créer dynamiquement et initialiser une nouvelle
+ * structure de type queue_hist. Celle-ci prend en paramètre des pointeurs sur
+ * les fonctions permettant la manipulation de la file (FIFO).
+ */
 
 void * new_queue(long (*get_size_queue)(void *),
 				 long (*get_max_size_queue)(void *),
@@ -114,10 +133,16 @@ void * new_queue(long (*get_size_queue)(void *),
 	return (void *)queue;
 }
 
+/*
+ * La fonction delete_queue permet de supprimer une structure de type queue_hist.
+ */
+
 void delete_queue(void *q_this)
 {
 	int nb_elem = ((struct queue_hist *)q_this)->nb_elem;
 
+	// On boucle en utilisant la fonction pop pour retirer les éléments
+	// et les supprimer.
 	for(int i = 0; i < nb_elem; i++)
 	{
 		((struct queue_hist *)q_this)->pop(q_this);
@@ -129,6 +154,10 @@ void delete_queue(void *q_this)
 	free(q_this);
 }
 
+/*
+ * La fonction get_size_queue retourne la taille courante de la file (FIFO).
+ */
+
 long get_size_queue(void *q_this)
 {
 	if(q_this != NULL)
@@ -136,12 +165,21 @@ long get_size_queue(void *q_this)
 	return -1;
 }
 
+/*
+ * La fonction get_max_size_queue retourne la taille maximum de la file (FIFO).
+ */
+
 long get_max_size_queue(void *q_this)
 {
 	if(q_this != NULL)
 		return ((struct queue_hist *)q_this)->max_size_queue;
 	return -1;
 }
+
+/*
+ * La fonction push permet de pousser un nouvel élément dans la file (FIFO). Celui-ci
+ * se trouvera en dernière position.
+ */
 
 int push(void *q_this, void *q_elem)
 {
@@ -164,7 +202,6 @@ int push(void *q_this, void *q_elem)
 		}
 
 		// Ensuite, on ajoute le nouvel élément en queue de file.
-
 		((struct queue_hist *)q_this)->nb_elem++;
 		((struct queue_hist *)q_this)->size_queue += size_elem;
 
@@ -189,6 +226,11 @@ int push(void *q_this, void *q_elem)
 	return -1;
 }
 
+/*
+ * La fonction pop permet de sortir l'élément en tête de file (FIFO). Celui-ci sera
+ * détruit.
+ */
+
 int pop(void *q_this)
 {
 	int size_first_elem = 0;
@@ -199,16 +241,19 @@ int pop(void *q_this)
 	{
 		size_first_elem = ((struct queue_hist *)q_this)->get_size_elem(((struct queue_hist *)q_this)->first_elem);
 
+		// Cette fonction n'est pas utilisable si la file (FIFO) ne contient aucun élément.
 		if(((struct queue_hist *)q_this)->nb_elem < 1)
 		{
 			return -1;
 		}
+		// Suppression si il y a un seul élément dans la file (FIFO).
 		else if(((struct queue_hist *)q_this)->nb_elem == 1)
 		{
 			q_elem_tmp = ((struct queue_hist *)q_this)->first_elem;
 			((struct queue_hist *)q_this)->first_elem = NULL;
 			((struct queue_hist *)q_this)->last_elem = NULL;	
 		}
+		// Lorsqu'il y a plusieurs élément, suppression de l'élément en tête de file (FIFO).
 		else if(((struct queue_hist *)q_this)->nb_elem > 1)
 		{
 			q_elem_last_tmp = ((struct queue_hist *)q_this)->last_elem;
@@ -223,6 +268,8 @@ int pop(void *q_this)
 			((struct queue_hist *)q_this)->first_elem = q_elem_last_tmp;
 		}
 
+		// Mise à jour du nombre d'élément contenu dans la file (FIFO) et de la taille en
+		// octet de la file (FIFO).
 		((struct queue_hist *)q_this)->nb_elem--;
 		((struct queue_hist *)q_this)->size_queue -= size_first_elem;
 
@@ -233,6 +280,11 @@ int pop(void *q_this)
 
 	return -1;
 }
+
+/*
+ * La fonction get_elem permet de retourner une référence sur l'élément situé à la position
+ * index dans la file. Cette fonction part du dernier élément en direction du premier élément.
+ */
 
 void * get_elem(void *q_this, int index)
 {
@@ -247,12 +299,20 @@ void * get_elem(void *q_this, int index)
 	return (void *)e;
 }
 
+/*
+ * La fonction get_nb_elem renvoie le nombre d'éléments contenu dans la file (FIFO).
+ */
+
 int get_nb_elem(void *q_this)
 {
 	if(q_this != NULL)
 		return ((struct queue_hist *)q_this)->nb_elem;
 	return -1;
 }
+
+/*
+ * La fonction get_size_elem retourne la taille d'un élément en octets.
+ */
 
 long get_size_elem(void *q_elem)
 {
@@ -295,6 +355,10 @@ long get_size_elem(void *q_elem)
 	return -1;
 }
 
+/*
+ * La fonction print_queue affiche la file (FIFO) sur la sortie standard.
+ */
+
 void print_queue(void *q_this)
 {
 	struct queue_hist *q = (struct queue_hist *)q_this;
@@ -309,6 +373,10 @@ void print_queue(void *q_this)
 	}
 }
 
+/*
+ * La fonction print_elem affiche un élément sur la sortie standard.
+ */
+
 void print_elem(void *q_elem)
 {
 	struct elem_hist *e = (struct elem_hist *)q_elem;
@@ -318,10 +386,20 @@ void print_elem(void *q_elem)
 			(void *)e, e->q_url, e->q_ipcli, e->q_date, e->q_staterr, (void *)(e->q_next));
 }
 
+/*
+ * La fonction rand_x_y retourne un nombre pseudo-aléatoire borné entre x et y, bornes incluses.
+ */
+
 int rand_x_y(int x, int y)
 {
     return (rand() % (y - x) + x);
 }
+
+/*
+ * La fonction get_file_name retourne un nom de fichier sous la forme d'une chaîne de caractères.
+ * Celle-ci est composée de la date et de l'heure courante, ainsi que d'une valeur pseudo-aléatoire
+ * comprise entre 1000 et 9999.
+ */
 
 int get_file_name(char **buffer)
 {
