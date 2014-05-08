@@ -44,8 +44,12 @@
 
 struct server_process * init_server_process(int (*ptr_child_process)(void *), 
 											int (*ptr_father_process)(void *),
-											int *sock)
+											void *sock)
 {
+	// fils 		0 1
+	// père 		1 0
+	// fils et père 1 1
+
 	struct server_process *psp;
 
 	// Allocation de mémoire pour la structure server_process.
@@ -59,6 +63,14 @@ struct server_process * init_server_process(int (*ptr_child_process)(void *),
 	psp->ptr_process[0] = ptr_child_process;
 	psp->ptr_process[1] = ptr_father_process;
 	psp->data = (void *)sock;
+	psp->pid_child_process = -1;
+	psp->c_and_f = 0;
+
+	if(psp->ptr_process[0] != NULL)
+		psp->c_and_f++;
+
+	if(psp->ptr_process[1] != NULL)
+		psp->c_and_f += 2;
 
 	return psp;
 }
@@ -79,8 +91,29 @@ void delete_server_process(struct server_process *ptr_sp)
 
 int call_fork(int val, struct server_process *ptr_sp)
 {
+	// fils 		0 1
+	// père 		1 0
+	// fils et père 1 1
+
 	if(val < 0) return -1;
-	(*ptr_sp->ptr_process[((!val) ? 0 : 1)])((void *)ptr_sp->data);
+
+	ptr_sp->pid_child_process = val; // Sauvegarde du processus fils;
+
+	// Fonction pour processus père et fonction pour processus fils.
+	if(ptr_sp->c_and_f == 3)
+		(*ptr_sp->ptr_process[((!val) ? 0 : 1)])((void *)ptr_sp->data);
+
+	// Fonction pour processus père.
+	else if((ptr_sp->c_and_f == 2) && (val != 0))
+		(*ptr_sp->ptr_process[1])((void *)ptr_sp->data);
+
+	// Fonction pour processus fils.
+	else if((ptr_sp->c_and_f == 1) && (val == 0))
+		(*ptr_sp->ptr_process[0])((void *)ptr_sp->data);
+	
+	// Sinon pas de fonction spécifique ni pour processus père, ni pour processu fils.
+	else
+		return -1;
 
 	return EXIT_SUCCESS;
 }

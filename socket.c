@@ -244,7 +244,7 @@ int tcp_server(void *arg)
 	// pas des zombies.
 	signal(SIGCHLD, SIG_IGN);
 
-	psp = init_server_process(ipv4_process, ipv6_process, sock_name);
+	psp = init_server_process(ipv4_process, ipv6_process, (void *)sock_name);
 	call_fork(fork(), psp);
 	delete_server_process(psp);
 

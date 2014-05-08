@@ -29,8 +29,10 @@
 
 struct server_process
 {
-	int(*ptr_process[2])(void *);
-	void *data;
+	int   (*ptr_process[2])(void *);
+	int   c_and_f;
+	void  *data;
+	pid_t pid_child_process;
 };
 
 /*
@@ -40,7 +42,7 @@ struct server_process
 
 struct server_process * init_server_process	 (int (*ptr_child_process)(void *), 
                                               int (*ptr_father_process)(void *),
-                                              int *sock);
+                                              void *sock);
 void                    delete_server_process(struct server_process *ptr_sp);
 int                     call_fork            (int val, struct server_process *ptr_sp);
 
