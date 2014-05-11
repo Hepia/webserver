@@ -35,7 +35,7 @@ CC=gcc
 INCLUDES_FOLDERS=-I./include/
 DEFINE_OPT=-DOPTIONS_LONGUES 
 DEFINE=-D_GNU_SOURCES
-CFLAGS=-W -Wall -ansi -pedantic -g -ggdb -pg -std=gnu99 -Wno-unused-but-set-variable -Wno-pointer-to-int-cast $(INCLUDES_FOLDERS)
+CFLAGS=-W -Wall -ansi -pedantic -g -ggdb -pg -std=gnu99 -Wno-unused-but-set-variable -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast $(INCLUDES_FOLDERS)
 LDFLAGS=
 EXEC=webserver
 

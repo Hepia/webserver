@@ -37,6 +37,7 @@
 #include "include/sig_handler.h"
 #include "include/server_const.h"
 #include "include/histo.h"
+#include "include/process_management.h"
 
 /*
  * Variable externe se trouvant dans le fichier sig_handler.c.
