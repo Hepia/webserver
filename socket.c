@@ -63,7 +63,7 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 	int status;
 	int i;
 	int yes = 1;
-		int reuse_addr = 1;
+	int reuse_addr = 1;
 	int one_more_time = 4; // Nombre de tentative si l'adresse est déjà utilisé.
 
 	struct hostent  *hostent;

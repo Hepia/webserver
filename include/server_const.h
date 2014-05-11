@@ -50,6 +50,8 @@
 #define HTTP_VERSION        "1.1"
 #define SERVER_INFO         "Webserver/0.3.1 Felipe Paul Martins & Joachim Schmidt"
 
+#define AFUNIX_SOCKET_PATH "./afunix_socket"
+
 /*
  * Symbole faisant référence soit à l'adresse local d'une socket, soit à l'adresse
  * distante.

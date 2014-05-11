@@ -41,7 +41,7 @@ EXEC=webserver
 
 all: $(EXEC)
 
-webserver: main.o options.o socket.o sig_handler.o process_management.o http.o local_time.o histo.o
+webserver: main.o options.o socket.o sig_handler.o process_management.o http.o local_time.o histo.o log_process.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 main.o: main.c ./include/options.h ./include/server_const.h
@@ -66,6 +66,9 @@ local_time.o: local_time.c ./include/local_time.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
 histo.o: histo.c ./include/histo.h ./include/local_time.h
+	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
+
+log_process.o: log_process.c ./include/log_process.h ./include/histo.h ./include/process_management.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
 clean:

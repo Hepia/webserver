@@ -91,9 +91,10 @@ void delete_server_process(struct server_process *ptr_sp)
 
 int call_fork(int val, struct server_process *ptr_sp)
 {
-	// fils 		0 1
-	// père 		1 0
-	// fils et père 1 1
+	// Si ptr_sp->c_and_f
+	// fils 		0 1 = 1
+	// père 		1 0 = 2
+	// fils et père 1 1 = 3
 
 	if(val < 0) return -1;
 

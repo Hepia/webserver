@@ -53,7 +53,7 @@ int  max_connexion    = MAX_CONNEXION_CLIENTS;
 /*
  * Point d'entrée principale du programme.
  */
-
+/*
 int main(int argc, char *argv[])
 {
     struct serv_param param;
@@ -84,11 +84,11 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-
+*/
 /*
  * La fonction testoption, test les options passées en paramètre au programme.
  */
- 
+/*
 void testoption(int argc, char *argv[], 
                 char *port_srv, char *chemin_fichiers,
                 int taille_log, int max_connexion)
@@ -106,3 +106,4 @@ void testoption(int argc, char *argv[],
     }
     fprintf(stdout, "\n");
 }
+*/

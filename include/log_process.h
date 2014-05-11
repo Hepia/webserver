@@ -21,4 +21,7 @@
 #ifndef _LOG_PROCESS_H_
 #define _LOG_PROCESS_H_
 
+int create_socket_stream_afunix(const char *path);
+int log_process(void *data);
+
 #endif
