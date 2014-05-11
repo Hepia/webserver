@@ -66,6 +66,7 @@ struct serv_param
 	char *chemin_fichiers;
 	int   taille_log;
 	int   max_connexion;
+	//int	  *sock_afunix;
 };
 
 #endif

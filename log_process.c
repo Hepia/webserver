@@ -37,9 +37,10 @@
 #include "include/histo.h"
 #include "include/process_management.h"
 #include "include/server_const.h"
+#include "include/socket.h"
 
 
-// variable temporaire
+// Variable contenant la taille maximum des logs.
 extern int  taille_log;
 
 // <log=149>
@@ -48,27 +49,6 @@ extern int  taille_log;
 // <date=41>[localtime = 10/05/14 - 18:07:05 - (Eté)]</date>
 // <staterr=3>404</staterr>
 // </log>
-
-int main(int argc, char *argv[])
-{
-	int sock_afunix;
-	struct server_process *s_process_log = NULL;
-
-	// Création d'un flux pour la socket AF_UNIX.
-	sock_afunix = create_socket_stream_afunix(AFUNIX_SOCKET_PATH);
-	// Initialisation de la structure pour la création du processus
-	// log_process et passage en paramètre de la socket AF_UNIX.
-	s_process_log = init_server_process(log_process, NULL, (void *)sock_afunix);
-	
-	// Création du nouveau log_process.
-	call_fork(fork(), s_process_log);
-
-	delete_server_process(s_process_log);
-
-	wait();
-
-	return EXIT_SUCCESS;
-}
 
 int create_socket_stream_afunix(const char *path)
 {
@@ -113,34 +93,24 @@ int log_process(void *data)
 {
 	struct queue_hist *logs = NULL;
 	struct elem_hist *log_e = NULL;
-	//char *log_entry   = "127.0.0.1:9999/favicon.ico$127.0.0.1$404";
+	struct sockaddr_un *remote = NULL;
+	socklen_t struct_len = 0;
+
+	char *log_entry;
 	char *champs      = NULL;
 	char *ligne;
 	char **tab_logs   = NULL;
 	int c = 0;
 	int sock_afunix = (int)data;
 	int new_sock_afunix;
-	struct sockaddr_un *remote = NULL;
-	socklen_t struct_len = 0;
-
-	char *log_entry;
 	int n_recv;
+
+	
+	fprintf(stdout, "Lancement du processus de gestion des logs.\t[OK]\n");
 
 	tab_logs = calloc(3, sizeof(char *));
 
 	if((remote = calloc(1, sizeof(struct sockaddr_un))) == NULL)
-	{
-		perror("calloc");
-		exit(EXIT_FAILURE);
-	}
-
-	if((log_entry = calloc(2, sizeof(char))) == NULL)
-	{
-	 	perror("calloc");
-	 	exit(EXIT_FAILURE);
-	}
-
-	if((ligne = calloc(256, sizeof(char))) == NULL)
 	{
 		perror("calloc");
 		exit(EXIT_FAILURE);
@@ -161,6 +131,17 @@ int log_process(void *data)
 	// On boucle tantque le serveur n'est pas interrompu.
 	while(!close_tcp_server())
 	{
+		if((log_entry = calloc(2, sizeof(char))) == NULL)
+		{
+	 		perror("calloc");
+	 		exit(EXIT_FAILURE);
+		}
+
+		if((ligne = calloc(256, sizeof(char))) == NULL)
+		{
+			perror("calloc");
+			exit(EXIT_FAILURE);
+		}
 
 		new_sock_afunix = accept(sock_afunix, (struct sockaddr *)remote, &struct_len);
 
@@ -175,7 +156,6 @@ int log_process(void *data)
 
 			while((n_recv = read(new_sock_afunix, log_entry, 1)) > 0)
 			{
-				//write(1, log_entry, n_recv);
 				ligne[i] = log_entry[0];
 				i++;
 			}
@@ -198,10 +178,26 @@ int log_process(void *data)
 		logs->push(logs, (void *)log_e);
 		log_e = NULL;
 
+		close(new_sock_afunix);
+		free(log_entry);
+		free(ligne);
+		free(tab_logs[0]);
+		free(tab_logs[1]);
+		free(tab_logs[2]);
+		champs = NULL;
+		tab_logs[0] = NULL;
+		tab_logs[1] = NULL;
+		tab_logs[2] = NULL;
+		c = 0;
 		print_queue(logs);
 	}
 
 	delete_queue((void *)logs);
+
+	// Supression de l'adresse de la socket.
+	unlink(AFUNIX_SOCKET_PATH);
+
+	fprintf(stdout, "Fin du processus de gestion des logs.\t[OK]\n");
 
 	exit(EXIT_SUCCESS);
 }

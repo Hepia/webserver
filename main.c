@@ -23,6 +23,15 @@
 #include <unistd.h>
 #include <string.h>
 
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+
+#include "include/log_process.h"
 #include "include/options.h"
 #include "include/socket.h"
 #include "include/sig_handler.h"
@@ -53,9 +62,11 @@ int  max_connexion    = MAX_CONNEXION_CLIENTS;
 /*
  * Point d'entrée principale du programme.
  */
-/*
+
 int main(int argc, char *argv[])
 {
+    int sock_afunix;
+    struct server_process *s_process_log = NULL;
     struct serv_param param;
 	
 	// Initialisation du gestionnaire de signaux.
@@ -79,16 +90,37 @@ int main(int argc, char *argv[])
     testoption((argc - optind), &(argv[optind]), port_srv, chemin_fichiers,
                taille_log, max_connexion);
 
+
+    // Création d'un flux pour la socket AF_UNIX.
+    sock_afunix = create_socket_stream_afunix(AFUNIX_SOCKET_PATH);
+    //param.sock_afunix = &sock_afunix;
+    // Initialisation de la structure pour la création du processus
+    // log_process et passage en paramètre de la socket AF_UNIX.
+    s_process_log = init_server_process(log_process, NULL, (void *)sock_afunix);
+
+     // Création du nouveau log_process.
+    call_fork(fork(), s_process_log);
 	// Lancement du serveur TCP/IP.
     tcp_server((void *)&param);
 
+    delete_server_process(s_process_log);
+
     return EXIT_SUCCESS;
 }
-*/
+
+
+
+
+    
+
+
+ 
+
+
 /*
  * La fonction testoption, test les options passées en paramètre au programme.
  */
-/*
+
 void testoption(int argc, char *argv[], 
                 char *port_srv, char *chemin_fichiers,
                 int taille_log, int max_connexion)
@@ -106,4 +138,3 @@ void testoption(int argc, char *argv[],
     }
     fprintf(stdout, "\n");
 }
-*/

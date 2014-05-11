@@ -26,11 +26,9 @@
 
 #include "include/sig_handler.h"
 #include "include/histo.h"
+#include "include/server_const.h"
 
 struct sigaction *list_action;
-
-// structure contenant les logs.
-extern struct queue_hist *q_log;
 
 /*
  * La fonction init_handler alloue dynamiquement de la mémoire pour une structure
@@ -78,9 +76,8 @@ void handler(int num)
 		case SIGINT : // Capture du signal SIGINT.
 			fprintf(stdout, "Processus %d : signal SIGINT\nInterruption du processus\n", getpid());
 
-			// Suppression de la file de log de l'espace d'adressage du processus.
-			if(q_log != NULL)
-				delete_queue(q_log);
+			// Supression de l'adresse de la socket.
+			unlink(AFUNIX_SOCKET_PATH);
 			delete_handler(list_action);
 			
 			// On termine les processus proprement.

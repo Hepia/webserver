@@ -27,8 +27,13 @@
 #include <fcntl.h>
 #include <alloca.h>
 
-#include <sys/types.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #include "include/http.h"
 #include "include/server_const.h"
@@ -37,17 +42,20 @@
 
 extern char *chemin_fichiers;
 
-// structure contenant les logs.
-extern struct queue_hist *q_log;
-
 /**
  * 
  */
 int processHttp(int sockfd, char *ipcli) {
 
 	int              rHttpCode, keepAlive;
-	struct elem_hist *elemHist = NULL;
+	//struct elem_hist *elemHist = NULL;
 	stuHttpData      *httpData = (stuHttpData *) calloc(1,sizeof(stuHttpData));
+	// Variables et structures pour la gestion de la socket AF_UNIX
+	// destinée à la gestion des logs.
+	struct sockaddr_un remote;
+	int sock_afunix;
+	char *buffer_w = NULL;
+	int length;
 
 	httpData->socketfd = sockfd;
 	httpData->q_ipcli  = ipcli;
@@ -81,11 +89,41 @@ int processHttp(int sockfd, char *ipcli) {
 	char *fullUri = (char *) alloca((1 + sizeof(httpData->q_host) + sizeof(httpData->q_filename)) * sizeof(char));
 	sprintf(fullUri, "%s/%s", httpData->q_host, httpData->q_filename);
 
-	elemHist = (struct elem_hist *) create_new_elem_hist(fullUri, httpData->q_ipcli, rHttpCode);
+	if((buffer_w = calloc(255, sizeof(char))) == NULL)
+	{
+		perror("calloc");
+		exit(EXIT_FAILURE);
+	}
 
-	// Ajoute d'une nouvelle entrée dans la file de logs.
-	((struct queue_hist *)q_log)->push(q_log, (void *)elemHist);
-	print_queue(q_log);
+	//strcpy(buffer_w, "127.0.0.1:9999/favicon.ico$127.0.0.1$404");
+	sprintf(buffer_w, "%s$%s$%d", fullUri, httpData->q_ipcli, rHttpCode);
+	//fprintf(stdout, "\t\t\t\t%s$%s$%d\n", fullUri, httpData->q_ipcli, rHttpCode);
+	
+	if((sock_afunix = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
+	{
+		perror("socket");
+		exit(EXIT_FAILURE);
+	}
+
+	remote.sun_family = AF_UNIX;
+	strcpy(remote.sun_path, AFUNIX_SOCKET_PATH);
+
+	length = (strlen(remote.sun_path) + sizeof(remote.sun_family));
+
+	if((connect(sock_afunix, (struct sockaddr *)&remote, length)) !=0)
+	{
+		perror("connect");
+		exit(1);
+	}
+
+	if((write(sock_afunix, buffer_w, strlen(buffer_w) + 1)) < 0)
+	{
+		perror("write");
+		exit(EXIT_FAILURE);
+	}
+
+	close(sock_afunix);
+	free(buffer_w);
 
 	// Envoi du fichier
 	sendFile(httpData);
