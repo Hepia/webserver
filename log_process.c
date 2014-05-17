@@ -24,12 +24,14 @@
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
+#include <fcntl.h>
 
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 
@@ -38,10 +40,18 @@
 #include "include/process_management.h"
 #include "include/server_const.h"
 #include "include/socket.h"
+#include "include/sig_handler.h"
 
 
 // Variable contenant la taille maximum des logs.
-extern int  taille_log;
+extern int taille_log;
+
+struct queue_hist *logs = NULL;
+FILE *fp_log            = NULL;
+char *log_path          = NULL;
+char *log_file_name     = NULL;
+
+struct sigaction *list_action_log;
 
 // <log=149>
 // <url=26>127.0.0.1:9999/favicon.ico</url>
@@ -91,7 +101,6 @@ int create_socket_stream_afunix(const char *path)
 
 int log_process(void *data)
 {
-	struct queue_hist *logs = NULL;
 	struct elem_hist *log_e = NULL;
 	struct sockaddr_un *remote = NULL;
 	socklen_t struct_len = 0;
@@ -104,9 +113,35 @@ int log_process(void *data)
 	int sock_afunix = (int)data;
 	int new_sock_afunix;
 	int n_recv;
-
 	
-	fprintf(stdout, "Lancement du processus de gestion des logs.\t[OK]\n");
+	fprintf(stdout, "Lancement du processus [%d] de gestion des logs.\t[OK]\n", getpid());
+
+
+	// Allocation dynamique.
+	list_action_log = calloc(1, sizeof(struct sigaction));
+
+	// Liaison de la structure avec la fonction handler.
+	list_action_log->sa_handler = handler_log;
+	sigemptyset(&(list_action_log->sa_mask));
+	// Paramètrage du comportement des signaux.
+	list_action_log->sa_flags = 0;
+	list_action_log->sa_flags = SA_RESTART;
+
+	// liaison du signal SIGINT avec la structure sigaction.
+	if(sigaction(SIGUSR1, list_action_log, NULL) != 0)
+	{
+		perror("sigaction");
+		exit(EXIT_FAILURE);
+	}
+
+	// liaison du signal SIGINT avec la structure sigaction.
+	if(sigaction(SIGINT, list_action_log, NULL) != 0)
+	{
+	 	perror("sigaction");
+	 	exit(EXIT_FAILURE);
+	}
+
+	free(list_action_log);
 
 	tab_logs = calloc(3, sizeof(char *));
 
@@ -200,4 +235,100 @@ int log_process(void *data)
 	fprintf(stdout, "Fin du processus de gestion des logs.\t[OK]\n");
 
 	exit(EXIT_SUCCESS);
+}
+
+FILE * x_fopen(const char *file_name, const char *flow_mode)
+{
+	int b_read   = 0;
+	int b_write  = 0;
+	int b_append = 0;
+	int b_creat  = 0;
+	int b_trunc  = 0;
+	int flags    = 0;
+	int len_flow_mode = strlen(flow_mode);
+
+	int fd;
+	FILE *fp;
+
+	for(int i = 0; i < len_flow_mode; i++)
+		switch(flow_mode[i])
+		{
+			case 'a' :
+				b_write  = 1;
+				b_read   = 1;
+				b_append = 1;
+				break;
+
+			case 'r' :
+				b_read = 1;
+				break;
+
+			case 'w' :
+				b_write = 1;
+				b_creat = 1;
+				b_trunc = 1;
+				break;
+
+			case '+' :
+				b_write = 1;
+				b_read  = 1;
+				break;
+
+			default :
+				break;
+		}
+
+	if(b_read & b_write)
+		flags = O_RDWR;
+	else if(b_read)
+		flags = O_RDONLY;
+	else if(b_write)
+		flags = O_WRONLY;
+	else
+	{
+		errno = EINVAL;
+		return NULL;
+	}
+
+	if(b_creat)
+		flags |= O_CREAT;
+	if(b_trunc)
+		flags |= O_TRUNC;
+
+	flags |= O_EXCL;
+
+	if((fd = open(file_name, flags, 0777)) < 0)
+	{
+		perror("open");
+		return NULL;
+	}
+
+	if((fp = fdopen(fd, flow_mode)) == NULL)
+	{
+		perror("fdopen");
+		return NULL;
+	}
+
+	return fp;
+}
+
+FILE * my_fopen(const char *file_name, const char *mode, int excl)
+{
+	FILE *fp = NULL;
+
+	fprintf(stdout, "Ouverture %s de %s, mode %s\n", (excl ? "exclusif" : ""), file_name, mode);
+	fflush(stdout);
+
+	if(excl)
+		fp = x_fopen(file_name, mode);
+	else
+		fp = fopen(file_name, mode);
+
+	if(fp == NULL)
+	{
+		perror("fopen");
+		return NULL;
+	}
+
+	return fp;
 }

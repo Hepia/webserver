@@ -23,10 +23,14 @@
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
+#include <string.h>
 
 #include "include/sig_handler.h"
 #include "include/histo.h"
 #include "include/server_const.h"
+
+extern FILE *fp_log;
+extern struct queue_hist *logs;
 
 struct sigaction *list_action;
 
@@ -76,6 +80,8 @@ void handler(int num)
 		case SIGINT : // Capture du signal SIGINT.
 			fprintf(stdout, "Processus %d : signal SIGINT\nInterruption du processus\n", getpid());
 
+			//fclose(fp_log);
+			//delete_queue((void *)logs);
 			// Supression de l'adresse de la socket.
 			unlink(AFUNIX_SOCKET_PATH);
 			delete_handler(list_action);
@@ -87,3 +93,57 @@ void handler(int num)
 			break;
 	}
 }
+
+void handler_log(int num)
+{
+	int nb_elem_hist = 0;
+	struct elem_hist *q_elem_pop = NULL;
+	char buffer_log[1024];
+
+	switch(num)
+	{
+		case SIGINT : // Capture du signal SIGINT.
+			fprintf(stdout, "Processus %d : signal SIGINT\nInterruption du processus\n", getpid());
+			fprintf(stdout, "Libération des logs de la mémoire.\nFermeture du fichier de logs.\n");
+
+			delete_queue((void *)logs);
+
+			fclose(fp_log);
+			// Supression de l'adresse de la socket.
+			unlink(AFUNIX_SOCKET_PATH);
+			delete_handler(list_action);
+			
+			// On termine les processus proprement.
+			exit(EXIT_SUCCESS);
+
+		case SIGUSR1 : // Capture du signal SIGUSR1
+			nb_elem_hist = logs->get_nb_elem(logs);
+
+			fprintf(stdout, "Le processus log [%d] a reçu le signal SIGUSR1.\n", getpid());
+
+			for(int i = 0; i < nb_elem_hist; i++)
+			{
+				q_elem_pop = (struct elem_hist *)(logs->pop(logs));
+
+				sprintf(buffer_log, "%s - %s - %s - %d\n", 
+						q_elem_pop->q_url,
+						q_elem_pop->q_ipcli,
+						q_elem_pop->q_date,
+						q_elem_pop->q_staterr);
+
+				if((fwrite(buffer_log, sizeof(char), strlen(buffer_log), fp_log)) != strlen(buffer_log))
+				{
+					perror("fwrite");
+					exit(EXIT_FAILURE);
+				}	
+
+				delete_elem_hist((void *)q_elem_pop);
+			}
+
+			break;
+
+		default :
+			break;
+	}
+}
+

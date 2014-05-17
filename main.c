@@ -109,15 +109,6 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-
-
-
-    
-
-
- 
-
-
 /*
  * La fonction testoption, test les options passées en paramètre au programme.
  */
@@ -129,7 +120,7 @@ void testoption(int argc, char *argv[],
     fprintf(stdout, "Mini Serveur Web\n");
     fprintf(stdout, "Le serveur écoute sur le port : %s\n", port_srv);
     fprintf(stdout, "La racine des fichiers HTML est : %s\n", chemin_fichiers);
-    fprintf(stdout, "La taille taille du fichier log : %d Ko\n", taille_log);
+    fprintf(stdout, "La taille taille du fichier log : %d o\n", taille_log);
     fprintf(stdout, "Le nombre maximum de clients simultanés : %d\n", max_connexion);
 
     fprintf(stdout, "Argument supplémentaires : ");

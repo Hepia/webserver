@@ -26,6 +26,12 @@
 
 #include "include/histo.h"
 #include "include/local_time.h"
+#include "include/log_process.h"
+#include "include/server_const.h"
+
+extern FILE *fp_log;
+extern char *log_path;
+extern char *log_file_name;
 
 /*
  * La fonction create_new_elem_hist crée un nouvel élément et remplis les champs de la
@@ -102,13 +108,14 @@ void delete_elem_hist(void *q_elem)
 void * new_queue(long (*get_size_queue)(void *),
 				 long (*get_max_size_queue)(void *),
 				 int (*push)(void *, void *),
-				 int (*pop)(void *),
+				 void * (*pop)(void *),
 				 void * (*get_elem)(void *, int),
 				 int (*get_nb_elem)(void *),
 				 long (*get_size_elem) (void *),
 				 long max_size_queue)
 {
 	struct queue_hist *queue = NULL;
+	int size_file_name = 0;
 	
 	if((queue = calloc(1, sizeof(struct queue_hist))) == NULL)
 	{
@@ -129,6 +136,23 @@ void * new_queue(long (*get_size_queue)(void *),
 	queue->get_elem       	  = get_elem;
 	queue->get_nb_elem    	  = get_nb_elem;
 	queue->get_size_elem  	  = get_size_elem;
+
+	// Création du nom du fichier de log.
+	size_file_name = get_file_name(&log_file_name);
+
+	if((log_path = calloc(size_file_name + 1 + strlen(LOG_FOLDER), sizeof(char))) == NULL)
+	{
+		perror("calloc");
+		return NULL;
+	}
+
+	// Cération du chemin d'accès relatif du fichier de log.
+	strcpy(log_path, LOG_FOLDER);
+	strcat(log_path, log_file_name);
+
+	// Ouverture du fichier de log.
+	fprintf(stdout, "Le fichier de log \"%s\" a été crée.\n", log_path);
+	fp_log = my_fopen(log_path, "aw+", 1);
 	
 	return (void *)queue;
 }
@@ -140,12 +164,31 @@ void * new_queue(long (*get_size_queue)(void *),
 void delete_queue(void *q_this)
 {
 	int nb_elem = ((struct queue_hist *)q_this)->nb_elem;
+	struct elem_hist *q_elem_pop = NULL;
+	char buffer_log[1024];
 
 	// On boucle en utilisant la fonction pop pour retirer les éléments
 	// et les supprimer.
+
+	fprintf(stdout, "Sauvegarde des logs sur le disque.\n");
+
 	for(int i = 0; i < nb_elem; i++)
 	{
-		((struct queue_hist *)q_this)->pop(q_this);
+		q_elem_pop = (struct elem_hist *)(((struct queue_hist *)q_this)->pop(q_this));
+
+		sprintf(buffer_log, "%s - %s - %s - %d\n", 
+				q_elem_pop->q_url,
+				q_elem_pop->q_ipcli,
+				q_elem_pop->q_date,
+				q_elem_pop->q_staterr);
+
+		if((fwrite(buffer_log, sizeof(char), strlen(buffer_log), fp_log)) != strlen(buffer_log))
+		{
+			perror("fwrite");
+			exit(EXIT_FAILURE);
+		}	
+
+		delete_elem_hist((void *)q_elem_pop);
 	}
 
 	((struct queue_hist *)q_this)->first_elem = NULL;
@@ -185,6 +228,8 @@ int push(void *q_this, void *q_elem)
 {
 	int size_elem = 0;
 	void *q_elem_tmp = NULL;
+	struct elem_hist *q_elem_pop = NULL;
+	char buffer_log[1024];
 
 	if((q_this != NULL) && (q_elem != NULL))
 	{
@@ -197,8 +242,28 @@ int push(void *q_this, void *q_elem)
 		while((((struct queue_hist *)q_this)->get_size_queue(q_this) + size_elem) > 
 			((struct queue_hist *)q_this)->get_max_size_queue(q_this))
 		{
+			if(((struct queue_hist *)q_this)->get_nb_elem(q_this) == 0)
+				return -1;
+
 			fprintf(stdout, "\n\nTaille trop petite\n\n");
-			((struct queue_hist *)q_this)->pop(q_this);
+
+			q_elem_pop = (struct elem_hist *)(((struct queue_hist *)q_this)->pop(q_this));
+
+			sprintf(buffer_log, "%s - %s - %s - %d\n", 
+					q_elem_pop->q_url,
+					q_elem_pop->q_ipcli,
+					q_elem_pop->q_date,
+					q_elem_pop->q_staterr);
+
+			if((fwrite(buffer_log, sizeof(char), strlen(buffer_log), fp_log)) != strlen(buffer_log))
+			{
+				perror("fwrite");
+				exit(EXIT_FAILURE);
+			}	
+
+			fprintf(stdout, "%s\n", buffer_log);
+
+			delete_elem_hist((void *)q_elem_pop);
 		}
 
 		// Ensuite, on ajoute le nouvel élément en queue de file.
@@ -231,7 +296,7 @@ int push(void *q_this, void *q_elem)
  * détruit.
  */
 
-int pop(void *q_this)
+void* pop(void *q_this)
 {
 	int size_first_elem = 0;
 	void *q_elem_tmp = NULL;
@@ -244,7 +309,7 @@ int pop(void *q_this)
 		// Cette fonction n'est pas utilisable si la file (FIFO) ne contient aucun élément.
 		if(((struct queue_hist *)q_this)->nb_elem < 1)
 		{
-			return -1;
+			return NULL;
 		}
 		// Suppression si il y a un seul élément dans la file (FIFO).
 		else if(((struct queue_hist *)q_this)->nb_elem == 1)
@@ -273,12 +338,12 @@ int pop(void *q_this)
 		((struct queue_hist *)q_this)->nb_elem--;
 		((struct queue_hist *)q_this)->size_queue -= size_first_elem;
 
-		delete_elem_hist(q_elem_tmp);
+		//delete_elem_hist(q_elem_tmp);
 
-		return EXIT_SUCCESS;
+		return q_elem_tmp;
 	}
 
-	return -1;
+	return NULL;
 }
 
 /*
@@ -414,7 +479,7 @@ int get_file_name(char **buffer)
 
 	sprintf(srval, "%d", rval);
 
-	size = get_local_time(&buffer_tmp, 0);
+	size = get_local_time(&buffer_tmp, 1);
 
 	assert(*buffer == NULL);
 

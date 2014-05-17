@@ -73,6 +73,7 @@ log_process.o: log_process.c ./include/log_process.h ./include/histo.h ./include
 
 clean:
 	rm -rf *.o
+	rm -rf afunix_socket
 
 mrproper: clean
 	rm -rf $(EXEC)

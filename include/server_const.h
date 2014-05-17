@@ -34,7 +34,7 @@
  */
 
 #define PORT_SERVEUR_DEFAUT   "4321"
-#define TAILLE_FICHIER_LOG    1024
+#define TAILLE_FICHIER_LOG    65536
 #define CHEMIN_FICHIERS_HTML  "./www/"
 #define MAX_CONNEXION_CLIENTS 10
 
@@ -50,7 +50,8 @@
 #define HTTP_VERSION        "1.1"
 #define SERVER_INFO         "Webserver/0.3.1 Felipe Paul Martins & Joachim Schmidt"
 
-#define AFUNIX_SOCKET_PATH "./afunix_socket"
+#define AFUNIX_SOCKET_PATH  "./afunix_socket"
+#define LOG_FOLDER          "./log/"
 
 /*
  * Symbole faisant référence soit à l'adresse local d'une socket, soit à l'adresse

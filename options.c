@@ -278,7 +278,7 @@ void aide(char *nom_programme)
     fprintf(stdout, " -o [sous_options]     Définir des sous-options\n");
 
     fprintf(stdout, "Sous-options :\n");
-    fprintf(stdout, " log=<taille_en_ko>    Taille du fichier des logs en [Ko]\n");
+    fprintf(stdout, " log=<taille_en_o>    Taille du fichier des logs en [o]\n");
     fprintf(stdout, " path=<chemin>         Chemin des fichiers html\n");
     fprintf(stdout, " maxcli=<nombre>       Nombre maximum de clients simultanés\n");
     fprintf(stdout, "Variables d'environnement :\n");
@@ -299,7 +299,7 @@ void info(char *port_srv, char *chemin_fichiers,
     fprintf(stdout, "Mini Serveur Web\n");
     fprintf(stdout, "Port du serveur                : %s\n", port_srv);
     fprintf(stdout, "Répertoire de travail          : %s\n", chemin_fichiers);
-    fprintf(stdout, "Taille des logs                : %d Ko\n", taille_log);
+    fprintf(stdout, "Taille des logs                : %d o\n", taille_log);
     fprintf(stdout, "Nombre de clients authorisé    : %d\n", max_connexion);
     fprintf(stdout, "Nombre de coeurs               : %d\n", 8);
 }

@@ -55,7 +55,7 @@ struct queue_hist
 	long   (*get_size_queue)	(void *);
 	long   (*get_max_size_queue)(void *);
 	int    (*push)          	(void *, void *);
-	int    (*pop)           	(void *);
+	void * (*pop)           	(void *);
 	void * (*get_elem)      	(void *, int);
 	int    (*get_nb_elem)   	(void *);
 	long   (*get_size_elem) 	(void *);
@@ -76,7 +76,7 @@ void   delete_elem_hist		(void *q_elem);
 void * new_queue    		(long (*get_size_queue)(void *),
 							 long (*get_max_size_queue)(void *),
 							 int (*push)(void *, void *),
-							 int (*pop)(void *),
+							 void * (*pop)(void *),
 							 void * (*get_elem)(void *, int),
 							 int (*get_nb_elem)(void *),
 							 long (*get_size_elem) (void *),
@@ -87,7 +87,7 @@ void   delete_queue  		(void *q_this);
 long   get_size_queue		(void *q_this);
 long   get_max_size_queue	(void *q_this);
 int    push          		(void *q_this, void *q_elem);
-int    pop           		(void *q_this);
+void * pop           		(void *q_this);
 void * get_elem      		(void *q_this, int index);
 int    get_nb_elem   		(void *q_this);
 long   get_size_elem		(void *q_elem);

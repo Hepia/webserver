@@ -24,4 +24,7 @@
 int create_socket_stream_afunix(const char *path);
 int log_process(void *data);
 
+FILE * x_fopen(const char *file_name, const char *mode_flux);
+FILE * my_fopen(const char *file_name, const char *mode, int excl);
+
 #endif
