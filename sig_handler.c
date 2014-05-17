@@ -29,9 +29,11 @@
 #include "include/histo.h"
 #include "include/server_const.h"
 
+// Référence externe sur le fichier de logs et sur la file de logs.
 extern FILE *fp_log;
 extern struct queue_hist *logs;
 
+// Structure contenant la liste des signaux.
 struct sigaction *list_action;
 
 /*
@@ -94,6 +96,11 @@ void handler(int num)
 	}
 }
 
+/*
+ * La fonction handler_log est le gestionnaire de signaux qui est appelé lorsqu'un
+ * signal unix est envoyé au processus log_process.
+ */
+
 void handler_log(int num)
 {
 	int nb_elem_hist = 0;
@@ -106,13 +113,16 @@ void handler_log(int num)
 			fprintf(stdout, "Processus %d : signal SIGINT\nInterruption du processus\n", getpid());
 			fprintf(stdout, "Libération des logs de la mémoire.\nFermeture du fichier de logs.\n");
 
+			// Supression de la file de logs.
 			delete_queue((void *)logs);
 
+			// Fermeture du fichier de logs.
 			fclose(fp_log);
 			// Supression de l'adresse de la socket.
 			unlink(AFUNIX_SOCKET_PATH);
 			delete_handler(list_action);
 			
+			fprintf(stdout, "Fin du processus [%d] de gestion des logs.\t[OK]\n", getpid());
 			// On termine les processus proprement.
 			exit(EXIT_SUCCESS);
 
@@ -121,22 +131,29 @@ void handler_log(int num)
 
 			fprintf(stdout, "Le processus log [%d] a reçu le signal SIGUSR1.\n", getpid());
 
+			// Supression de la totalité des logs qui se trouvent en mémoire
+			// et sauvegarde de ces derniers dans le fichier de logs.
 			for(int i = 0; i < nb_elem_hist; i++)
 			{
+				// On sort l'élément de tête.
 				q_elem_pop = (struct elem_hist *)(logs->pop(logs));
 
+				// On remplit un buffer avec le contenu de l'élément
+				// sorti.
 				sprintf(buffer_log, "%s - %s - %s - %d\n", 
 						q_elem_pop->q_url,
 						q_elem_pop->q_ipcli,
 						q_elem_pop->q_date,
 						q_elem_pop->q_staterr);
 
+				// On écrit le contenu du buffer dans le fichier de logs.
 				if((fwrite(buffer_log, sizeof(char), strlen(buffer_log), fp_log)) != strlen(buffer_log))
 				{
 					perror("fwrite");
 					exit(EXIT_FAILURE);
 				}	
 
+				// On supprime définitivement l'élément.
 				delete_elem_hist((void *)q_elem_pop);
 			}
 

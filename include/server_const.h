@@ -50,6 +50,11 @@
 #define HTTP_VERSION        "1.1"
 #define SERVER_INFO         "Webserver/0.3.1 Felipe Paul Martins & Joachim Schmidt"
 
+/*
+ * Symboles faisant référence à la socket AF_UNIX et au dossier contenant les
+ * fichiers de logs.
+ */
+
 #define AFUNIX_SOCKET_PATH  "./afunix_socket"
 #define LOG_FOLDER          "./log/"
 
@@ -67,7 +72,6 @@ struct serv_param
 	char *chemin_fichiers;
 	int   taille_log;
 	int   max_connexion;
-	//int	  *sock_afunix;
 };
 
 #endif

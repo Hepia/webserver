@@ -21,8 +21,21 @@
 #ifndef _LOG_PROCESS_H_
 #define _LOG_PROCESS_H_
 
+/*
+ * Prototypes des fonctions.
+ */
+
+/*
+ * Création d'un flux sur une socket AF_UNIX et corps du processus
+ * de gestion des logs.
+ */
+
 int create_socket_stream_afunix(const char *path);
 int log_process(void *data);
+
+/*
+ * Fonctions personnelles pour la gestion des fichiers.
+ */
 
 FILE * x_fopen(const char *file_name, const char *mode_flux);
 FILE * my_fopen(const char *file_name, const char *mode, int excl);

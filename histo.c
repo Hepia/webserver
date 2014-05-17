@@ -29,6 +29,8 @@
 #include "include/log_process.h"
 #include "include/server_const.h"
 
+// Références externe au fichier de logs et au chemin d'accès du fichier de logs.
+
 extern FILE *fp_log;
 extern char *log_path;
 extern char *log_file_name;
@@ -172,22 +174,27 @@ void delete_queue(void *q_this)
 
 	fprintf(stdout, "Sauvegarde des logs sur le disque.\n");
 
+	// Boucle de supression des éléments de la file.
 	for(int i = 0; i < nb_elem; i++)
 	{
+		// On sort l'élément.
 		q_elem_pop = (struct elem_hist *)(((struct queue_hist *)q_this)->pop(q_this));
 
+		// On formate le contenu de l'élément sorti dans un buffer.
 		sprintf(buffer_log, "%s - %s - %s - %d\n", 
 				q_elem_pop->q_url,
 				q_elem_pop->q_ipcli,
 				q_elem_pop->q_date,
 				q_elem_pop->q_staterr);
 
+		// On sauvegarde le buffer dans le fichier de logs.
 		if((fwrite(buffer_log, sizeof(char), strlen(buffer_log), fp_log)) != strlen(buffer_log))
 		{
 			perror("fwrite");
 			exit(EXIT_FAILURE);
-		}	
+		}
 
+		// On supprime définitivement l'élément sorti.
 		delete_elem_hist((void *)q_elem_pop);
 	}
 
@@ -245,23 +252,22 @@ int push(void *q_this, void *q_elem)
 			if(((struct queue_hist *)q_this)->get_nb_elem(q_this) == 0)
 				return -1;
 
-			fprintf(stdout, "\n\nTaille trop petite\n\n");
-
+			// On sort l'élément.
 			q_elem_pop = (struct elem_hist *)(((struct queue_hist *)q_this)->pop(q_this));
 
+			// On formate le contenu de l'élément sorti dans un buffer.
 			sprintf(buffer_log, "%s - %s - %s - %d\n", 
 					q_elem_pop->q_url,
 					q_elem_pop->q_ipcli,
 					q_elem_pop->q_date,
 					q_elem_pop->q_staterr);
 
+			// On sauvegarde le buffer dans le fichier de logs.
 			if((fwrite(buffer_log, sizeof(char), strlen(buffer_log), fp_log)) != strlen(buffer_log))
 			{
 				perror("fwrite");
 				exit(EXIT_FAILURE);
-			}	
-
-			fprintf(stdout, "%s\n", buffer_log);
+			}
 
 			delete_elem_hist((void *)q_elem_pop);
 		}
@@ -494,58 +500,3 @@ int get_file_name(char **buffer)
 
 	return (size + 4);
 }
-
-// int main(void)
-// {
-// 	struct queue_hist *queue = NULL;
-
-// 	struct elem_hist *e1 = NULL;
-// 	struct elem_hist *e2 = NULL;
-// 	struct elem_hist *e3 = NULL;
-// 	struct elem_hist *e4 = NULL;
-// 	struct elem_hist *e5 = NULL;
-
-// 	queue = new_queue(get_size_queue, get_max_size_queue,
-// 					  push, pop,
-// 					  get_elem, get_nb_elem,
-// 					  get_size_elem, 330);
-
-// 	e1 = create_new_elem_hist("http://localhost1/index.html", "127.0.0.1", 1);
-// 	e2 = create_new_elem_hist("http://localhost2", "127.0.0.2", 2);
-// 	e3 = create_new_elem_hist("http://localhost3/t.txt", "127.0.0.3", 3);
-// 	e4 = create_new_elem_hist("http://www.google.com", "192.168.0.100", 4);
-// 	e5 = create_new_elem_hist("http://www.hepia.ch", "192.168.0.200", 5);
-
-// 	fprintf(stdout, "e1 + e2 + e3 + e4 + e5= %ld\n\n\n", get_size_elem((void *)e1) + 
-// 														 get_size_elem((void *)e2) + 
-// 													 	 get_size_elem((void *)e3) +
-// 													 	 get_size_elem((void *)e4) +
-// 													 	 get_size_elem((void *)e4));
-
-// 	queue->push((void *)queue, (void *)e1);
-// 	queue->push((void *)queue, (void *)e2);
-// 	queue->push((void *)queue, (void *)e3);
-// 	queue->push((void *)queue, (void *)e4);
-// 	queue->push((void *)queue, (void *)e5);
-
-// 	print_queue((void *)queue);
-
-// 	fprintf(stdout, "\n\nelem index %d\n", 2);
-// 	print_elem(get_elem((void *)queue, 2));
-// 	fprintf(stdout, "\n\n");
-
-// 	queue->pop((void *)queue);
-// 	queue->pop((void *)queue);
-// 	queue->pop((void *)queue);
-// 	queue->pop((void *)queue);
-
-// 	queue->pop((void *)queue);
-// 	queue->pop((void *)queue);
-// 	queue->pop((void *)queue);
-
-// 	print_queue((void *)queue);
-
-// 	delete_queue(queue);
-
-// 	return EXIT_SUCCESS;
-// }

@@ -66,7 +66,11 @@ int  max_connexion    = MAX_CONNEXION_CLIENTS;
 
 int main(int argc, char *argv[])
 {
+    // Descripteur de la socket AF_UNIX pour la connexion des processus
+    // de traitement des connextions au processus de gestion des logs.
     int sock_afunix;
+
+    // Structure pour la construction du processus de gestion des logs.
     struct server_process *s_process_log = NULL;
     struct serv_param param;
 	
@@ -104,6 +108,8 @@ int main(int argc, char *argv[])
 	// Lancement du serveur TCP/IP.
     tcp_server((void *)&param);
 
+    // Suppression de la structure de configuration du processus de gestion 
+    // des logs.
     delete_server_process(s_process_log);
 
     return EXIT_SUCCESS;

@@ -95,10 +95,9 @@ int processHttp(int sockfd, char *ipcli) {
 		exit(EXIT_FAILURE);
 	}
 
-	//strcpy(buffer_w, "127.0.0.1:9999/favicon.ico$127.0.0.1$404");
 	sprintf(buffer_w, "%s$%s$%d", fullUri, httpData->q_ipcli, rHttpCode);
-	//fprintf(stdout, "\t\t\t\t%s$%s$%d\n", fullUri, httpData->q_ipcli, rHttpCode);
 	
+	// Création d'une socket AF_UNIX.
 	if((sock_afunix = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
 	{
 		perror("socket");
@@ -110,18 +109,23 @@ int processHttp(int sockfd, char *ipcli) {
 
 	length = (strlen(remote.sun_path) + sizeof(remote.sun_family));
 
+	// Connexion au processus de gestion des logs au travers de la socket
+	// AF_UNIX.
 	if((connect(sock_afunix, (struct sockaddr *)&remote, length)) !=0)
 	{
 		perror("connect");
 		exit(1);
 	}
 
+	// Envoie de la ligne de log de la connexion courante au processus
+	// de gestion des logs.
 	if((write(sock_afunix, buffer_w, strlen(buffer_w) + 1)) < 0)
 	{
 		perror("write");
 		exit(EXIT_FAILURE);
 	}
 
+	// Fermeture de la socket et libération mémoire du buffer.
 	close(sock_afunix);
 	free(buffer_w);
 

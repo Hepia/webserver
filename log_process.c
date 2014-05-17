@@ -46,19 +46,22 @@
 // Variable contenant la taille maximum des logs.
 extern int taille_log;
 
+// Pointeur sur la file de logs.
 struct queue_hist *logs = NULL;
+// Pointeur sur le fichier de logs et pointeurs sur le chemin d'accès
+// au fichier de logs.
 FILE *fp_log            = NULL;
 char *log_path          = NULL;
 char *log_file_name     = NULL;
 
+// Structure pour la configuration de la gestion des signaux pour le
+// processus de logs.
 struct sigaction *list_action_log;
 
-// <log=149>
-// <url=26>127.0.0.1:9999/favicon.ico</url>
-// <ipcli=9>127.0.0.1</ipcli>
-// <date=41>[localtime = 10/05/14 - 18:07:05 - (Eté)]</date>
-// <staterr=3>404</staterr>
-// </log>
+/*
+ * La fonction create_socket_stream_afunix retourne un descripteur sur
+ * une socket ouverte de type AF_UNIX.
+ */
 
 int create_socket_stream_afunix(const char *path)
 {
@@ -99,17 +102,26 @@ int create_socket_stream_afunix(const char *path)
 	return sock_afunix;
 }
 
+/*
+ * La fonction log_process est le corp du processus fils qui s'occupera de la 
+ * gestion des logs. Il sera à l'écoute des processus de connexion sur une
+ * socket AF_UNIX.
+ */
+
 int log_process(void *data)
 {
 	struct elem_hist *log_e = NULL;
 	struct sockaddr_un *remote = NULL;
 	socklen_t struct_len = 0;
 
+	// Variables pour le traitement des logs.
 	char *log_entry;
-	char *champs      = NULL;
 	char *ligne;
-	char **tab_logs   = NULL;
-	int c = 0;
+	char *champs    = NULL;
+	char **tab_logs = NULL;
+	int  c          = 0;
+
+	// Variables pour la gestion de la socket AF_UNIX.
 	int sock_afunix = (int)data;
 	int new_sock_afunix;
 	int n_recv;
@@ -125,9 +137,10 @@ int log_process(void *data)
 	sigemptyset(&(list_action_log->sa_mask));
 	// Paramètrage du comportement des signaux.
 	list_action_log->sa_flags = 0;
+	// Configuration pour le relancement automatique des appels système lents.
 	list_action_log->sa_flags = SA_RESTART;
 
-	// liaison du signal SIGINT avec la structure sigaction.
+	// liaison du signal SIGUSR1 avec la structure sigaction.
 	if(sigaction(SIGUSR1, list_action_log, NULL) != 0)
 	{
 		perror("sigaction");
@@ -143,6 +156,8 @@ int log_process(void *data)
 
 	free(list_action_log);
 
+	// Tableau contenant chaque champs de la ligne de logs
+	// reçu par un processus de gestion de connexion.
 	tab_logs = calloc(3, sizeof(char *));
 
 	if((remote = calloc(1, sizeof(struct sockaddr_un))) == NULL)
@@ -161,23 +176,27 @@ int log_process(void *data)
                       get_elem, get_nb_elem,
                       get_size_elem, taille_log);
 
+	// Mise en écoute de la socket AF_UNIX.
 	listen(sock_afunix, TAILLE_FILE_ECOUTE);
 
 	// On boucle tantque le serveur n'est pas interrompu.
 	while(!close_tcp_server())
 	{
+		// Buffer pour la lecture d'un caractère.
 		if((log_entry = calloc(2, sizeof(char))) == NULL)
 		{
 	 		perror("calloc");
 	 		exit(EXIT_FAILURE);
 		}
 
+		// Buffer pour stocker la ligne de logs au complet.
 		if((ligne = calloc(256, sizeof(char))) == NULL)
 		{
 			perror("calloc");
 			exit(EXIT_FAILURE);
 		}
 
+		// On accepte une nouvelle reqête qui se trouve sur la pile de la socket.
 		new_sock_afunix = accept(sock_afunix, (struct sockaddr *)remote, &struct_len);
 
 		if(new_sock_afunix < 0)
@@ -189,8 +208,10 @@ int log_process(void *data)
 		{
 			int i = 0;
 
+			// On receptionne la ligne de logs envoyé caractère par caractère.
 			while((n_recv = read(new_sock_afunix, log_entry, 1)) > 0)
 			{
+				// On copie chaque caractère reçu dans un buffer ligne.
 				ligne[i] = log_entry[0];
 				i++;
 			}
@@ -213,6 +234,8 @@ int log_process(void *data)
 		logs->push(logs, (void *)log_e);
 		log_e = NULL;
 
+		// Fermeture de la socket et libération des éléments
+		// alloués dynamiquement.
 		close(new_sock_afunix);
 		free(log_entry);
 		free(ligne);
@@ -224,18 +247,26 @@ int log_process(void *data)
 		tab_logs[1] = NULL;
 		tab_logs[2] = NULL;
 		c = 0;
+
+		// Affichage de la file de logs.
 		print_queue(logs);
 	}
 
+	// Supression de la file de logs.
 	delete_queue((void *)logs);
 
 	// Supression de l'adresse de la socket.
 	unlink(AFUNIX_SOCKET_PATH);
 
-	fprintf(stdout, "Fin du processus de gestion des logs.\t[OK]\n");
+	fprintf(stdout, "Fin du processus [%d] de gestion des logs.\t[OK]\n", getpid());
 
 	exit(EXIT_SUCCESS);
 }
+
+/*
+ * La fonction x_fopen permet d'ouvrir un flux sur un fichier de manière
+ * exclusif, construit autour d'un descripteur de fichier.
+ */
 
 FILE * x_fopen(const char *file_name, const char *flow_mode)
 {
@@ -250,26 +281,27 @@ FILE * x_fopen(const char *file_name, const char *flow_mode)
 	int fd;
 	FILE *fp;
 
+	// Configuration du mode d'ouverture.
 	for(int i = 0; i < len_flow_mode; i++)
 		switch(flow_mode[i])
 		{
-			case 'a' :
+			case 'a' : // Append
 				b_write  = 1;
 				b_read   = 1;
 				b_append = 1;
 				break;
 
-			case 'r' :
+			case 'r' : // Read
 				b_read = 1;
 				break;
 
-			case 'w' :
+			case 'w' : // Write
 				b_write = 1;
 				b_creat = 1;
 				b_trunc = 1;
 				break;
 
-			case '+' :
+			case '+' : // Read and write
 				b_write = 1;
 				b_read  = 1;
 				break;
@@ -278,6 +310,7 @@ FILE * x_fopen(const char *file_name, const char *flow_mode)
 				break;
 		}
 
+	// Configuration de la variable flags.
 	if(b_read & b_write)
 		flags = O_RDWR;
 	else if(b_read)
@@ -290,6 +323,8 @@ FILE * x_fopen(const char *file_name, const char *flow_mode)
 		return NULL;
 	}
 
+	if(b_append)
+		flags |= O_APPEND;
 	if(b_creat)
 		flags |= O_CREAT;
 	if(b_trunc)
@@ -297,12 +332,15 @@ FILE * x_fopen(const char *file_name, const char *flow_mode)
 
 	flags |= O_EXCL;
 
+	// Ouverture du descripteur de fichier.
 	if((fd = open(file_name, flags, 0777)) < 0)
 	{
 		perror("open");
 		return NULL;
 	}
 
+	// Ouverture d'un flux sur un fichier construit
+	// autour du descripteur de fichier.
 	if((fp = fdopen(fd, flow_mode)) == NULL)
 	{
 		perror("fdopen");
@@ -312,13 +350,20 @@ FILE * x_fopen(const char *file_name, const char *flow_mode)
 	return fp;
 }
 
+/*
+ * La fonction my_fopen utilise la fonction x_fopen pour ouvrir un fichier
+ * et permet de choisir si l'ouverture est exclusive.
+ */
+
 FILE * my_fopen(const char *file_name, const char *mode, int excl)
 {
+	// Pointeur sur le flux du fichier.
 	FILE *fp = NULL;
 
 	fprintf(stdout, "Ouverture %s de %s, mode %s\n", (excl ? "exclusif" : ""), file_name, mode);
 	fflush(stdout);
 
+	// Ouverture exclusif ou non-exclusive.
 	if(excl)
 		fp = x_fopen(file_name, mode);
 	else
