@@ -44,31 +44,31 @@ all: $(EXEC)
 webserver: main.o options.o socket.o sig_handler.o process_management.o http.o local_time.o histo.o log_process.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-main.o: main.c ./include/options.h ./include/server_const.h
+main.o: main.c ./include/options.h ./include/server_const.h ./include/log_process.h ./include/socket.h ./include/sig_handler.h ./include/histo.h ./include/process_management.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
 options.o: options.c ./include/options.h ./include/server_const.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE_OPT) $(DEFINE)
 
-socket.o: socket.c ./include/socket.h ./include/process_management.h ./include/server_const.h
+socket.o: socket.c ./include/socket.h ./include/process_management.h ./include/server_const.h ./include/http.h ./include/histo.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
-process_management.o: process_management.c ./include/process_management.h ./include/server_const.h
+process_management.o: process_management.c ./include/process_management.h ./include/server_const.h ./include/socket.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
-sig_handler.o: sig_handler.c ./include/sig_handler.h
+sig_handler.o: sig_handler.c ./include/sig_handler.h ./include/histo.h ./include/server_const.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
-http.o: http.c ./include/http.h
+http.o: http.c ./include/http.h ./include/server_const.h ./include/local_time.h ./include/histo.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
 local_time.o: local_time.c ./include/local_time.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
-histo.o: histo.c ./include/histo.h ./include/local_time.h
+histo.o: histo.c ./include/histo.h ./include/local_time.h ./include/log_process.h ./include/server_const.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
-log_process.o: log_process.c ./include/log_process.h ./include/histo.h ./include/process_management.h
+log_process.o: log_process.c ./include/log_process.h ./include/histo.h ./include/process_management.h ./include/server_const.h ./include/socket.h ./include/sig_handler.h
 	$(CC) -o $@ -c $< $(CFLAGS) $(DEFINE)
 
 clean:
