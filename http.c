@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <alloca.h>
+#include <signal.h>
 
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -43,13 +44,15 @@
 extern char *chemin_fichiers;
 
 /**
- * 
+ * Traite l'entier de la requête HTTP. Lis le flux entrant, analyse les éléments de la requête
+ * Vérifie la disponnibilité des fichiers demandés et les renvois si existant, sinon renvoi un code erreur approprié
  */
 int processHttp(int sockfd, char *ipcli) {
 
-	int              rHttpCode, keepAlive;
-	//struct elem_hist *elemHist = NULL;
-	stuHttpData      *httpData = (stuHttpData *) calloc(1,sizeof(stuHttpData));
+
+	int         rHttpCode;
+	stuHttpData *httpData = (stuHttpData *) calloc(1,sizeof(stuHttpData));
+
 	// Variables et structures pour la gestion de la socket AF_UNIX
 	// destinée à la gestion des logs.
 	struct sockaddr_un remote;
@@ -113,7 +116,7 @@ int processHttp(int sockfd, char *ipcli) {
 	if((connect(sock_afunix, (struct sockaddr *)&remote, length)) !=0)
 	{
 		perror("connect");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	if((write(sock_afunix, buffer_w, strlen(buffer_w) + 1)) < 0)
@@ -127,9 +130,12 @@ int processHttp(int sockfd, char *ipcli) {
 
 	// Envoi du fichier
 	sendFile(httpData);
-	keepAlive = httpData->q_keep_alive;
 
-	return keepAlive;
+	// if (httpData->q_keep_alive)
+	//	alarm(KEEP_ALIVE_TIMEOUT);
+	// return httpData->q_keep_alive;
+
+	return 0;
 }
 
 /**

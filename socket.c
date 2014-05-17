@@ -44,6 +44,8 @@ extern char *port_srv;
 extern char *chemin_fichiers;
 extern int  taille_log;
 extern int  max_connexion;
+int sockFD;
+
 
 /*
  * La fonction create_socket_stream ouvre une socket IPv4 et une socket
@@ -219,6 +221,7 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 
 int tcp_server(void *arg)
 {
+	printf("tcp_server pid %d\n", getpid());
 	int *sock_name;
 	//struct serv_param *param = (struct serv_param *)arg;
 	//int sock_connected;
@@ -268,9 +271,8 @@ int close_tcp_server(void)
 
 void process_connection(int sock)
 {
-
+	sockFD = sock;
 	char ipcli[TAILLE_READ_BUFFER];
-	int keepAlive;
 
 	// Affichage de l'adresse IP du serveur local.
 	fprintf(stdout, "Connexion : locale   ");
@@ -280,14 +282,13 @@ void process_connection(int sock)
 	fprintf(stdout, "\t    distante ");
 	print_socket_address(sock, DISTANT, ipcli);
 
-	do
-	{
-		// Traite la requête HTTP
-		keepAlive = processHttp(sock, ipcli);
-	} while (keepAlive);
+	// fprintf(stdout, "\t    Socket: %d, pid %d\n", sock, getpid());
+
+	// Traite la requête HTTP
+	processHttp(sock, ipcli);
 
 	// Fermeture de la socket
-	close(sock);
+	close_socket();
 }
 
 /*
@@ -392,5 +393,11 @@ int print_socket_address(int sock, int where, char *ext_buffer)
 
 	free(addr);
 
+	return 0;
+}
+
+int close_socket() {
+
+	close (sockFD);
 	return 0;
 }
