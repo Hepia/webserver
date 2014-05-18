@@ -182,7 +182,8 @@ void* readQueryHeader(stuHttpData *httpData) {
 void* parseHeader(stuHttpData *httpData) {
 
 	char *token;
-	char *rUri 		= calloc(TAILLE_READ_BUFFER, sizeof(char));
+	char *rUri             = calloc(TAILLE_READ_BUFFER, sizeof(char));
+
 	httpData->q_keep_alive = 0;
 	httpData->q_method     = calloc(16, sizeof(char));
 	httpData->q_host       = calloc(TAILLE_READ_BUFFER, sizeof(char));
@@ -269,13 +270,16 @@ void* buildHeader(stuHttpData *httpData) {
 	else if	(httpData->r_code == 403)	httpData->r_status = "Forbidden";
 	else if	(httpData->r_code == 404)	httpData->r_status = "Not found";
 
+	getMimeType(httpData);
+
 	// Création du header sous forme d'une chaîne
 	char *tmp_str = (char *) alloca(TAILLE_READ_BUFFER * sizeof(char));
 	sprintf(tmp_str, "HTTP/%s %d %s\n"
 					 "Server: %s\n"
-					 "Content-Length: %d\n\n", 
+					 "Content-Length: %d\n"
+					 "Content-Type: %s\n\n", 
 					 HTTP_VERSION, httpData->r_code, httpData->r_status, 
-					 SERVER_INFO, httpData->r_content_length);
+					 SERVER_INFO, httpData->r_content_length, httpData->r_content_mime);
 
 	httpData->r_header_size = strlen(tmp_str);
 	httpData->r_header = calloc(httpData->r_header_size + 1, sizeof(char));
@@ -319,4 +323,40 @@ int fileInfo(stuHttpData *httpData) {
 		httpData->r_code = 200;
 		return 200;
 	}
+}
+
+int getMimeType(stuHttpData *httpData) {
+
+	FILE *fptr;
+	char *tmp, *cmd;
+	char buf[TAILLE_READ_BUFFER], mime[TAILLE_READ_BUFFER];
+
+	// Création de la ligne de commande incluant le chemin complet du fichier
+	tmp = alloca(TAILLE_READ_BUFFER * sizeof(char));
+	sprintf(tmp, "file -i %s", httpData->q_filepath);
+	cmd = alloca((strlen(tmp) +1) * sizeof(char));
+	strcpy(cmd, tmp);
+
+	// Execution de la commande et réception du retour via le tube créé par popen
+	if ((fptr = popen(cmd, "r")) == NULL) {
+		perror("popen");
+		exit(EXIT_FAILURE);
+	}
+	// Lecture du flux du tube de popen
+	if (fgets(buf, TAILLE_READ_BUFFER, fptr) == NULL) {
+		perror("fgets");
+		exit(EXIT_FAILURE);
+	}
+
+	// Fermeture de flux de popen
+	pclose(fptr);
+
+	// Récupération du MIME
+	sscanf(buf, "%*s %s ", mime);
+
+	// Copy du MIME dans la structure avec troncage du caractère `;`
+	httpData->r_content_mime = calloc((strlen(mime)-1), sizeof(char));
+	strncpy(httpData->r_content_mime, mime, (strlen(mime)-1));
+
+	return 0;
 }

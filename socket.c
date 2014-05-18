@@ -221,7 +221,6 @@ int* create_socket_stream(const char *host_name, const char *serv_port,
 
 int tcp_server(void *arg)
 {
-	printf("tcp_server pid %d\n", getpid());
 	int *sock_name;
 	//struct serv_param *param = (struct serv_param *)arg;
 	//int sock_connected;
@@ -282,7 +281,7 @@ void process_connection(int sock)
 	fprintf(stdout, "\t    distante ");
 	print_socket_address(sock, DISTANT, ipcli);
 
-	// fprintf(stdout, "\t    Socket: %d, pid %d\n", sock, getpid());
+	// 	fprintf(stdout, "\t    Socket: %d, pid %d\n", sock, getpid());
 
 	// Traite la requête HTTP
 	processHttp(sock, ipcli);
