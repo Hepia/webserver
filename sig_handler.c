@@ -28,6 +28,7 @@
 #include "include/sig_handler.h"
 #include "include/histo.h"
 #include "include/server_const.h"
+#include "include/socket.h"
 
 // Référence externe sur le fichier de logs et sur la file de logs.
 extern FILE *fp_log;
@@ -55,9 +56,17 @@ void init_handler(struct sigaction *list_action)
 	// liaison du signal SIGINT avec la structure sigaction.
 	if(sigaction(SIGINT, list_action, NULL) != 0)
 	{
-		perror("sigaction");
+		perror("sigaction SIGINT");
 		exit(EXIT_FAILURE);
 	}
+
+	// liaison du signal SIGALRM avec la structure sigaction.
+	if(sigaction(SIGALRM, list_action, NULL) != 0)
+	{
+		perror("sigaction SIGALRM");
+		exit(EXIT_FAILURE);
+	}
+
 }
 
 /*
@@ -91,6 +100,18 @@ void handler(int num)
 			// On termine les processus proprement.
 			exit(EXIT_SUCCESS);
 
+			break;
+		case SIGALRM : // Capture du signal SIGALRM
+
+			fprintf(stdout, "Processus %d : signal SIGALRM. Fermeture de la socket\n", getpid());
+			
+			// Fermeture de la socket du processus courant
+			close_socket(NULL);
+
+			// On termine les processus proprement.
+			exit(EXIT_SUCCESS);
+
+			break;
 		default :
 			break;
 	}

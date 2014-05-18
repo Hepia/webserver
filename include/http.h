@@ -55,5 +55,6 @@ void* parseHeader       (stuHttpData *httpData);
 void* buildHeader       (stuHttpData *httpData);
 void* sendFile          (stuHttpData *httpData);
 int   fileInfo          (stuHttpData *httpData);
+int   getMimeType       (stuHttpData *httpData);
 
 #endif

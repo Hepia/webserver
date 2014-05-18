@@ -36,5 +36,6 @@ int  tcp_server          (void *arg);
 int  close_tcp_server    (void);
 void process_connection  (int sock);
 int  print_socket_address(int sock, int where, char *ext_buffer);
+int  close_socket        ();
 
 #endif

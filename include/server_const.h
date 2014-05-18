@@ -47,8 +47,9 @@
 #define TAILLE_READ_BUFFER  256
 #define TAILLE_FILE_ECOUTE  128 // Maximum sous Linux.
 #define TAILLE_REQUETE_MAX  2048
+#define KEEP_ALIVE_TIMEOUT  30 // nb secondes avant la fermeture d'une connection KeepAlive qui ne demande rien
 #define HTTP_VERSION        "1.1"
-#define SERVER_INFO         "Webserver/0.3.1 Felipe Paul Martins & Joachim Schmidt"
+#define SERVER_INFO         "Webserver/0.3.3 Felipe Paul Martins & Joachim Schmidt"
 
 /*
  * Symboles faisant référence à la socket AF_UNIX et au dossier contenant les
